@@ -1,1 +1,4 @@
-# foundations_in_bayesian_methodology
+# Foundations in Bayerian Methodology
+
+This is the working repo for group 2
+
