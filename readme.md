@@ -1,4 +1,4 @@
-# STA421: Foundations in Bayerian Methodology
+# STA421: Foundations in Bayesian Methodology
 
 This is the working repo for group 2
 
