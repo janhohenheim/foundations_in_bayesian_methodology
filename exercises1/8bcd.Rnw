@@ -1,0 +1,87 @@
+\documentclass{article}
+
+
+
+\usepackage{amsmath, amssymb}
+\usepackage{natbib}
+\usepackage{hyperref}
+\usepackage{booktabs}
+\usepackage{verbatim}
+\usepackage{float}
+
+
+\title{Foundations of Bayesian Methodology}
+\author{MyName}
+
+\begin{document}
+\SweaveOpts{concordance=TRUE}
+\maketitle
+
+
+
+
+\subsection*{8a)}
+
+
+
+
+
+
+
+
+
+
+\subsection*{8b)}
+
+The Bayes factor \( BF_{01}(y) \) is given by:
+\begin{equation*}
+BF_{01}(y) = \frac{f(y|H_0)}{f(y|H_1)} = 
+\frac{\sqrt{2\pi}\sqrt{\kappa} \exp\left(-\frac{\kappa}{2} (y - \mu_0)^2\right)}
+{\sqrt{2\pi} \sqrt{\frac{\kappa\lambda}{\kappa+\lambda}} \exp\left(-\frac{\kappa\lambda}{2(\kappa+\lambda)} (y - v)^2\right)}
+\end{equation*}
+
+After simplification, we get:
+\begin{equation*}
+BF_{01}(y) = \sqrt{\frac{\kappa+\lambda}{\lambda}} \exp\left(-\frac{\kappa}{2} (y - \mu_0)^2 + \frac{\kappa\lambda}{2(\kappa+\lambda)} (y - v)^2\right)
+\end{equation*}
+
+
+\subsection*{8c)}
+
+Examining the limits as \( \lambda \) approaches 0:
+\begin{align*}
+\lim_{{\lambda \to 0}} \left(\frac{\kappa + \lambda}{\lambda}\right) &= \infty, \\
+\lim_{{\lambda \to 0}} \left(\frac{\kappa\lambda}{2(\kappa+\lambda)}\right) &= 0, \\
+\text{therefore,} \\
+\lim_{{\lambda \to 0}} BF_{01}(y) &= \infty.
+\end{align*}
+
+
+\subsection*{8d)}
+
+
+Given the prior probability $P(H_0)$ and the likelihood $f(y|H_0)$, the posterior probability $P(H_0|y)$ can be calculated using Bayes' theorem:
+
+\begin{align*}
+P(H_0|y) &= \frac{f(y|H_0) \cdot P(H_0)}{f(y|H_0) \cdot P(H_0) + f(y|H_1) \cdot P(H_1)} \\
+&= \frac{f(y|H_0)}{f(y|H_0) + f(y|H_1)} \\
+&= \frac{f(y=1|Y \sim \mathcal{N}(0,1))}{f(y=1|Y \sim \mathcal{N}(0,1)) + f(y=1|Y \sim \mathcal{N}(2,2))} \\
+&\approx 0.5241
+\end{align*}
+
+
+Calculation in R:
+<<"name">>=
+Y_H0 <- dnorm(x = 1, mean = 0, sd = sqrt(1) )
+Y_H1 <- dnorm(x = 1, mean = 2, sd = sqrt(2) )
+
+H0_Y <- Y_H0 / (Y_H0 + Y_H1)
+H0_Y
+@
+
+The posterior of $H_0$ is higher than its prior.
+This is because the two models started out with equal priors (50/50), but the likelihood of seeing y=1 is higher under $H_0$ than under $H_1$. 
+
+\end{document}
+
+
