@@ -9,32 +9,72 @@ output: pdf_document
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
-### Section 
-## Subsection 
-# Subsubsection 
-
-```{r simple_r_code}
-x <- rnorm(n = 100, mean = 0, sd = 1)
-head(x)
+```{r}
+library(tidyverse)
+library(rjags)
+library(coda)
+library(bayesmeta)
 ```
 
-How to insert a figure 
+# Exercise 7
 
-```{r how_to_figure, fig.width=10, fig.height=2, fig.fullwidth=TRUE, fig.cap="A nice image." }
-hist(x)
+## Setup
+
+```{r}
+set.seed(44566)
+mu <- 160
+sigma <- 20
+M <- 1000
+X <- rnorm(M, mu, sigma)
 ```
 
+## 1.
 
-```{r how_to_figure_2, out.width="50%", fig.cap="A nice image.\\label{fig:figs}" }
-hist(x)
+```{r}
+glue::glue("True Values")
+glue::glue("----")
+glue::glue("mean: {mu}")
+glue::glue("standard deviation: {sigma}")
+glue::glue("variance: {sigma^2}")
+glue::glue("median: {mu}")
+glue::glue("0.025, 0.5 and 0.975 quantiles:")
+qnorm(c(0.025, 0.5, 0.975), mu, sigma)
 ```
 
-Refer to a figure like this: Figure~\ref{fig:figs}
+## 2.
 
-How to insert a picture
+```{r}
+coda::traceplot(mcmc(X))
+```
 
-![This is the caption of the figure.](example.jpg){width=40% height=60%}
+## 3.
 
-$$
-\gamma \sim \beta_{max} \: \text{and some text} \dots
-$$
+```{r}
+tibble(x = X) |> ggplot(aes(x = x)) + 
+  geom_histogram(aes(y=after_stat(density)), bins = 30) + 
+  stat_function(fun = dnorm, args = list(mu, sigma), color="blue", size = 2) +
+  labs(title = "Histogram of X", x = "X", y = "Frequency")
+```
+
+## 4.
+
+```{r}
+glue::glue("Estimated Values")
+glue::glue("------")
+glue::glue("mean: {mean(X)}")
+glue::glue("standard deviation: {sd(X)}")
+glue::glue("variance: {var(X)}")
+glue::glue("median: {median(X)}")
+glue::glue("0.025, 0.5 and 0.975 quantiles:")
+{quantile(X, probs = c(0.025, 0.5, 0.975))}
+```
+
+## 5.
+
+```{r}
+glue::glue("Estimated P[X > 175]: {mean(X > 175)}")
+glue::glue("True P[X > 175]: {pnorm(175, mu, sigma, lower.tail = FALSE)}")
+glue::glue("")
+glue::glue("Estimated P[150 < X < 180]: {mean(X > 150 & X < 180)}")
+glue::glue("True P[150 < X < 180]: {pnorm(180, mu, sigma) - pnorm(150, mu, sigma)}")
+```
