@@ -1,0 +1,32 @@
+---
+title: "Session 1, Exercise 9"
+author: "Emanuel Mauch"
+date: "2024-02-26"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Exercise 9
+
+```{r, warning=FALSE, message=FALSE}
+dat <- matrix(data = c(14, 9, 1, 5), ncol = 2, byrow = T)
+
+library(pCalibrate)
+
+bf <- twoby2Calibrate(dat, type="two.sided", alternative = "simple")
+
+formatBF(bf$minBF, digits = "default")
+```
+
+The bayes factor 0.29 is decreasing the prior odds of no effect P[H0].
+
+```{r}
+BF2pp(bf$minBF, prior.prob = 0.5)
+```
+
+The posterior probability P[H0|data] is estimated to be 0.23, meaning
+the probability that H0 (prior probability of no effect = 0.5) is true given our data is estimated to be 0.23.
+
