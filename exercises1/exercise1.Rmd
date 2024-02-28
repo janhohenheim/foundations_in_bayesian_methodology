@@ -52,7 +52,7 @@ coda::traceplot(mcmc(X))
 ```{r}
 tibble(x = X) |> ggplot(aes(x = x)) + 
   geom_histogram(aes(y=after_stat(density)), bins = 30) + 
-  stat_function(fun = dnorm, args = list(mu, sigma), color="blue", size = 2) +
+  stat_function(fun = dnorm, args = list(mu, sigma), color="blue", linewidth = 2) +
   labs(title = "Histogram of X", x = "X", y = "Frequency")
 ```
 
