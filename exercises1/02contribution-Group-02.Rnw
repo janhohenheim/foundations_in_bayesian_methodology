@@ -1,0 +1,64 @@
+\documentclass{article}
+
+
+
+\usepackage{amsmath, amssymb}
+\usepackage{natbib}
+\usepackage{hyperref}
+\usepackage{booktabs}
+\usepackage{verbatim}
+\usepackage{float}
+
+
+\title{Foundations of Bayesian Methodology \\[0.5cm] \large Group 2}
+\author{Andrea Staub \and Emanuel Mauch \and Guillaume Morlet \and Holly Vuarnoz \and Jan Hohenheim \and Sophie Haldemann}
+
+
+\begin{document}
+\maketitle
+
+\section{Worksheet 01}
+\subsection{Group tasks}
+\subsubsection{Exercise 5 (Bayes theorem)}
+
+Prove the conditional Bayes theorem:
+\begin{equation}
+    P(A|B, I) = \frac{P(B|A, I)P(A|I)}{P(B|I)}
+\end{equation}
+
+Bayes' theorem states: 
+\begin{equation}
+    P(A|B) = \frac{P(B|A)P(A)}{P(B)}
+\end{equation}
+
+
+
+The denominator \(P(B|I)\), according to the Law of Total Probability, is given by:
+\begin{equation}
+    P(B|I) = P(B|A, I)P(A|I) + P(B|A^c, I)P(A^c|I)
+\end{equation}
+
+
+
+
+
+Given the chain rule for probabilities, the joint probability \(P(A, B|I)\) is expressed as:
+\begin{equation}
+    P(A, B|I) = P(B|A, I)P(A|I)
+\end{equation}
+
+Substituting this into the equation for \(P(A|B, I)\) yields the conditional Bayes theorem:
+\begin{equation}
+    P(A|B, I) = \frac{P(B|A, I)P(A|I)}{P(B|I)}
+\end{equation}
+
+\subsubsection{Law of Total Probability}
+
+The denominator \(P(B|I)\) is determined by the Law of Total Probability:
+\begin{equation}
+    P(B|I) = P(B|A, I)P(A|I) + P(B|A^c, I)P(A^c|I)
+\end{equation}
+
+This formula illustrates how the probability of \(B\) occurring, given background information \(I\), is calculated by considering all possible ways \(B\) could occur.
+
+\end{document}
