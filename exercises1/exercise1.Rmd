@@ -3,6 +3,7 @@ title: "Exercise 1 Grouup 2"
 output:
   html_document:
     df_print: paged
+  pdf_document: default
 ---
 
 ```{r setup, include=FALSE}
@@ -167,8 +168,7 @@ Likelihood: $f(y|\mu) \sim N(\mu, \frac{1}{\kappa})$
 Prior: $f(\mu|H_1) \sim N(v, \frac{1}{\lambda})$  
 Marginal Likelihood: $f(y|H_1) = \int f(y|\mu) f(\mu|H_1) d\mu$
 
-The law of total expectation states that if $X$ and $Y$ are random variables on the same probability space, it is E(X)=E(E(X|Y)), and similarly, the law of total variance states that Var(Y) = E(Var(Y|X)) + Var(E(Y|X)).
-Since $\mu$ and $Y$ are both normally distributed, it is
+The law of total expectation states that if $X$ and $Y$ are random variables on the same probability space, it is $E(X) = E(E(X|Y))$, and similarly, the law of total variance states that $Var(Y) = E(Var(Y|X)) + Var(E(Y|X))$ (Held & Bové, p. 352). Since the likelihood is normal with known variance, and the prior is also a normal distribution, we have a conjugate setting that determines that the marginal likelihood (also known as prior predictive) is also normally distributed (Held & Bové, p. 234) with the following parameters:  
 
 $$
 \text{Var}(Y_{H_1}) = E[\text{Var}(Y_{H_1} | \mu_{H_1})] + \text{Var}[E(Y_{H_1} | \mu_{H_1})] = \frac{1}{\kappa} + \frac{1}{\lambda}
@@ -177,7 +177,7 @@ $$
 E(Y_{H_1}) = E[E(Y_{H_1} | \mu_{H_1})] = v
 $$
 
-Plugging in the expectation v and the standard deviation $\sqrt{\frac{1}{\kappa} + \frac{1}{\lambda}} = \sqrt{\frac{\kappa \lambda}{\kappa + \lambda}}$ into the PDF of a normal distribution, we get the desired result:
+Plugging in the expectation $v$ and the standard deviation $\sqrt{\frac{1}{\kappa} + \frac{1}{\lambda}} = \sqrt{\frac{\kappa \lambda}{\kappa + \lambda}}$ into the PDF of a normal distribution, we get the desired result:
 
 $$
 f(y|H_1) = \frac{1}{\sqrt{2\pi}} \sqrt{\frac{\kappa\lambda}{\kappa + \lambda}} \exp\left\{-\frac{\kappa\lambda}{2(\kappa + \lambda)}(y - \nu)^{2}\right\}
@@ -221,7 +221,7 @@ When lambda goes towards zero, the variance of the prior approaches infinity and
 
 ## d
 
-Given the prior probability $P(H_0)$ and the likelihood $f(y|H_0)$, the posterior probability $P(H_0|y)$ can be calculated using Bayes' theorem:
+The posterior probability $P(H_0|y)$ can be calculated using Bayes' theorem (Held & Bové, p.232), where $P(H_0)$ and $P(H_1)$ cancel each other out since in our case they are equal:
 
 $$
 \begin{align*}
@@ -241,9 +241,11 @@ H0_Y <- Y_H0 / (Y_H0 + Y_H1)
 H0_Y
 ```
 
-The posterior of H0 is higher than its prior.
-This is because the two models started out with equal priors (50/50), but the likelihood of seeing y=1 is higher under H0 than under H1. 
+The posterior of $H_0$ is higher than its prior.
+This is because the two models $H_0$ and $H_1$ started out with equal priors, but the likelihood of seeing y=1 is higher under $H_0$ than under $H_1$.
 
+
+Source: Held, L., & Bové, D. S. (2020). Likelihood and Bayesian inference: With applications in biology and medicine. Springer Berlin Heidelberg. 
 
 
 
