@@ -1,0 +1,41 @@
+---
+title: "Worksheet 1 Group Task 6"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+# Set chunk options here 
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Exercise 6 Application of the Bayes theorem
+
+**Given:**
+
+Diagnostic test with sensitivity P[T^+^|D^+^] = 0.95 and specificity P[T^-^|D^-^] = 0.94 
+Disease prevalence P[D^+^] = 0.001
+
+**Question:**
+
+What is P[D^-^|T^+^]?
+
+**Solution:**
+
+Bayes: 
+$$P[A|B] = \frac{P[B|A]*P[A]}{P[B]}$$
+
+Therefore:
+$$P[D^-|T^+] = \frac{P[T^+|D^-]*P[D^-]}{P[T^+]}$$
+$$P[T^+]=P[T^+|D^+]*P[D^+]+P[T^+|D^-]*P[D^-]$$
+$$P[T^+|D^-] = 1-P[T^-|D^-]$$
+$$P[D^-] = 1-P[D^+]$$
+
+R code for calculation:
+```{r}
+sens <- 0.95
+spec <- 0.94
+prev <- 0.001
+pt <- sens*prev+(1-spec)*(1-prev)
+(prob_dn_tp <- ((1-spec)*(1-prev))/pt)
+```
+The P[D^-^|T^+^] is 0.98. Therefore the probability that someone tested positive actually is healthy given a prevalence of the disease of 0.001 is very high due to the relatively low prevalence.
