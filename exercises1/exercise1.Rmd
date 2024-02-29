@@ -173,7 +173,7 @@ bf <- twoby2Calibrate(dat, type = "two.sided", alternative = "simple")
 formatBF(bf$minBF, digits = "default")
 ```
 
-The bayes factor 0.29 is decreasing the prior odds of no effect P[H0].
+The bayes factor $\frac{1}{3.4} = 0.29$ is decreasing the prior odds of no effect P[H0].
 
 ```{r}
 BF2pp(bf$minBF, prior.prob = 0.5)
