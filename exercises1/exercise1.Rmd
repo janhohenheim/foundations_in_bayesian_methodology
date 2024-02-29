@@ -161,45 +161,52 @@ The estimations are again pretty good
 
 ## a
 
-Likelihood: \( f(y|\mu) \sim N(\mu, \frac{1}{\kappa}) \) \    
-Prior: \( f(\mu|H_1) \sim N(v, \frac{1}{\lambda}) \) \    
-Marginal Likelihood: \( f(y|H_1) = \int f(y|\mu) f(\mu|H_1) d\mu \) \    
+Likelihood: $f(y|\mu) \sim N(\mu, \frac{1}{\kappa})$    
+Prior: $f(\mu|H_1) \sim N(v, \frac{1}{\lambda})$
+Marginal Likelihood: $f(y|H_1) = \int f(y|\mu) f(\mu|H_1) d\mu$
 
-The law of total expectation states that if \( X \) and \( Y \) are random variables on the same probability space, it is E(X)=E(E(X|Y)), and similarly, the law of total variance states that Var(Y) = E(Var(Y|X)) + Var(E(Y|X)).
-Since \( \mu \) and \( Y \) are both normally distributed, it is
+The law of total expectation states that if $X$ and $Y$ are random variables on the same probability space, it is E(X)=E(E(X|Y)), and similarly, the law of total variance states that Var(Y) = E(Var(Y|X)) + Var(E(Y|X)).
+Since $\mu$ and $Y$ are both normally distributed, it is
 
-\( \text{Var}(Y_{H_1}) = E[\text{Var}(Y_{H_1} | \mu_{H_1})] + \text{Var}[E(Y_{H_1} | \mu_{H_1})] = \frac{1}{\kappa} + \frac{1}{\lambda} \) \  
-
-\( E(Y_{H_1}) = E[E(Y_{H_1} | \mu_{H_1})] = v \)
-
+$$
+\text{Var}(Y_{H_1}) = E[\text{Var}(Y_{H_1} | \mu_{H_1})] + \text{Var}[E(Y_{H_1} | \mu_{H_1})] = \frac{1}{\kappa} + \frac{1}{\lambda}
+$$
+$$
+E(Y_{H_1}) = E[E(Y_{H_1} | \mu_{H_1})] = v
+$$
 
 
 ## b
 
-The Bayes factor \( BF_{01}(y) \) is given by:
+The Bayes factor $BF_{01}(y)$ is given by:
+$$
 \begin{equation*}
 BF_{01}(y) = \frac{f(y|H_0)}{f(y|H_1)} = 
 \frac{\sqrt{2\pi}\sqrt{\kappa} \exp\left(-\frac{\kappa}{2} (y - \mu_0)^2\right)}
 {\sqrt{2\pi} \sqrt{\frac{\kappa\lambda}{\kappa+\lambda}} \exp\left(-\frac{\kappa\lambda}{2(\kappa+\lambda)} (y - v)^2\right)}
 \end{equation*}
+$$
 
 After simplification, we get:
+$$
 \begin{equation*}
 BF_{01}(y) = \sqrt{\frac{\kappa+\lambda}{\lambda}} \exp\left(-\frac{\kappa}{2} (y - \mu_0)^2 + \frac{\kappa\lambda}{2(\kappa+\lambda)} (y - v)^2\right)
 \end{equation*}
-
+$$
 
 
 
 ## c
 
-Examining the limits as \( \lambda \) approaches 0:
+Examining the limits as $\lambda$ approaches 0:
+$$
 \begin{align*}
 \lim_{{\lambda \to 0}} \left(\frac{\kappa + \lambda}{\lambda}\right) &= \infty, \\
 \lim_{{\lambda \to 0}} \left(\frac{\kappa\lambda}{2(\kappa+\lambda)}\right) &= 0, \\
 \text{therefore,} \\
 \lim_{{\lambda \to 0}} BF_{01}(y) &= \infty.
 \end{align*}
+$$
 
 When lambda goes towards zero, the variance of the prior approaches infinity and therefore the prior will become an uninformative prior. This 
 
@@ -208,13 +215,14 @@ When lambda goes towards zero, the variance of the prior approaches infinity and
 
 Given the prior probability $P(H_0)$ and the likelihood $f(y|H_0)$, the posterior probability $P(H_0|y)$ can be calculated using Bayes' theorem:
 
+$$
 \begin{align*}
 P(H_0|y) &= \frac{f(y|H_0) \cdot P(H_0)}{f(y|H_0) \cdot P(H_0) + f(y|H_1) \cdot P(H_1)} \\
 &= \frac{f(y|H_0)}{f(y|H_0) + f(y|H_1)} \\
 &= \frac{f(y=1|Y \sim \mathcal{N}(0,1))}{f(y=1|Y \sim \mathcal{N}(0,1)) + f(y=1|Y \sim \mathcal{N}(2,2))} \\
 &\approx 0.5241
 \end{align*}
-
+$$
 
 Calculation in R:
 ```{r}
