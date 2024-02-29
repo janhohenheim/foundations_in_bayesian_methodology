@@ -18,7 +18,6 @@ library(pCalibrate)
 ```
 
 # Exercise 5
-hi
 
 Prove the conditional Bayes theorem:
 $$
