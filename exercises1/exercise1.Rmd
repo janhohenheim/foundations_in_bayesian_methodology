@@ -1,6 +1,8 @@
 ---
 title: "Exercise 1 Grouup 2"
-output: pdf_document
+output:
+  html_document:
+    df_print: paged
 ---
 
 ```{r setup, include=FALSE}
@@ -162,7 +164,7 @@ The estimations are again pretty good
 ## a
 
 Likelihood: $f(y|\mu) \sim N(\mu, \frac{1}{\kappa})$    
-Prior: $f(\mu|H_1) \sim N(v, \frac{1}{\lambda})$
+Prior: $f(\mu|H_1) \sim N(v, \frac{1}{\lambda})$  
 Marginal Likelihood: $f(y|H_1) = \int f(y|\mu) f(\mu|H_1) d\mu$
 
 The law of total expectation states that if $X$ and $Y$ are random variables on the same probability space, it is E(X)=E(E(X|Y)), and similarly, the law of total variance states that Var(Y) = E(Var(Y|X)) + Var(E(Y|X)).
@@ -173,6 +175,12 @@ $$
 $$
 $$
 E(Y_{H_1}) = E[E(Y_{H_1} | \mu_{H_1})] = v
+$$
+
+Plugging in the expectation v and the standard deviation $\sqrt{\frac{1}{\kappa} + \frac{1}{\lambda}} = \sqrt{\frac{\kappa \lambda}{\kappa + \lambda}}$ into the PDF of a normal distribution, we get the desired result:
+
+$$
+f(y|H_1) = \frac{1}{\sqrt{2\pi}} \sqrt{\frac{\kappa\lambda}{\kappa + \lambda}} \exp\left\{-\frac{\kappa\lambda}{2(\kappa + \lambda)}(y - \nu)^{2}\right\}
 $$
 
 
@@ -208,7 +216,7 @@ $$
 \end{align*}
 $$
 
-When lambda goes towards zero, the variance of the prior approaches infinity and therefore the prior will become an uninformative prior. This 
+When lambda goes towards zero, the variance of the prior approaches infinity and therefore the prior will become an uninformative prior, therefore the Bayes factor is in favor of the null hypothesis and approaches infinity.
 
 
 ## d
