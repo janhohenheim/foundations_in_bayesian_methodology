@@ -1,9 +1,9 @@
 ---
-title: "Exercise 1 Grouup 2"
+title: "Worksheet 01 Group 2"
 output:
+  pdf_document: default
   html_document:
     df_print: paged
-  pdf_document: default
 ---
 
 ```{r setup, include=FALSE}
@@ -177,7 +177,7 @@ $$
 E(Y_{H_1}) = E[E(Y_{H_1} | \mu_{H_1})] = v
 $$
 
-Plugging in the expectation $v$ and the standard deviation $\sqrt{\frac{1}{\kappa} + \frac{1}{\lambda}} = \sqrt{\frac{\kappa \lambda}{\kappa + \lambda}}$ into the PDF of a normal distribution, we get the desired result:
+Plugging in the expectation $v$ and the standard deviation $\sqrt{\frac{1}{\kappa} + \frac{1}{\lambda}} = \sqrt{\frac{\kappa + \lambda}{\kappa \lambda}}$ into the PDF of a normal distribution, we get the desired result:
 
 $$
 f(y|H_1) = \frac{1}{\sqrt{2\pi}} \sqrt{\frac{\kappa\lambda}{\kappa + \lambda}} \exp\left\{-\frac{\kappa\lambda}{2(\kappa + \lambda)}(y - \nu)^{2}\right\}
