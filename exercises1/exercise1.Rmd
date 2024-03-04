@@ -1,5 +1,12 @@
 ---
 title: "Worksheet 01 Group 2"
+author:
+- "Andrea Staub"
+- "Emanuel Mauch"
+- "Guillaume Morlet"
+- "Holly Vuarnoz"
+- "Jan Hohenheim"
+- "Sophie Haldemann"
 output:
   pdf_document: default
   html_document:
@@ -81,8 +88,10 @@ sens <- 0.95
 spec <- 0.94
 prev <- 0.001
 pt <- sens*prev+(1-spec)*(1-prev)
-(prob_dn_tp <- ((1-spec)*(1-prev))/pt)
+prob_dn_tp <- ((1-spec)*(1-prev))/pt
+prob_dn_tp
 ```
+
 The P[D^-^|T^+^] is 0.98. Therefore the probability that someone tested positive actually is healthy given a prevalence of the disease of 0.001 is very high due to the relatively low prevalence.
 
 # Exercise 7
@@ -99,7 +108,7 @@ X <- rnorm(M, mu, sigma)
 
 ## 1.
 
-```{r}
+```{r,results = "hold"}
 glue::glue("True Values")
 glue::glue("----")
 glue::glue("mean: {mu}")
@@ -128,7 +137,7 @@ The distributions are close, but the Monte Carlo histogram looks slightly bimoda
 
 ## 4.
 
-```{r}
+```{r,results = "hold"}
 glue::glue("Estimated Values")
 glue::glue("------")
 glue::glue("mean: {mean(X)}")
@@ -142,7 +151,7 @@ The estimations are fairly close to the truth
 
 ## 5.
 
-```{r}
+```{r,results = "hold"}
 glue::glue("Estimated P[X > 175]: {mean(X > 175)}")
 glue::glue("True P[X > 175]: {pnorm(175, mu, sigma, lower.tail = FALSE)}")
 glue::glue("")
