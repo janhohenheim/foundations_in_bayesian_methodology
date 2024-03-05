@@ -219,21 +219,26 @@ When lambda goes towards zero, the variance of the prior approaches infinity and
 
 ## d
 
+As established in 8a: $Y|H_1 \sim N(v, \frac{1}{\kappa} + \frac{1}{\lambda})$.  
+  
+Now given $\kappa = 1$, $\lambda = 1/2$, and $v = 2$: $Y|H_1 \sim N(2, 3)$.  
+
 The posterior probability $P(H_0|y)$ can be calculated using Bayes' theorem (Held & Bové, p.232), where $P(H_0)$ and $P(H_1)$ cancel each other out since in our case they are equal:
+
 
 $$
 \begin{aligned}
 P(H_0|y) &= \frac{f(y|H_0) \cdot P(H_0)}{f(y|H_0) \cdot P(H_0) + f(y|H_1) \cdot P(H_1)} \\
 &= \frac{f(y|H_0)}{f(y|H_0) + f(y|H_1)} \\
-&= \frac{f(y=1|Y \sim \mathcal{N}(0,1))}{f(y=1|Y \sim \mathcal{N}(0,1)) + f(y=1|Y \sim \mathcal{N}(2,2))} \\
-&\approx 0.5241
+&= \frac{f(y=1|Y \sim \mathcal{N}(0,1))}{f(y=1|Y \sim \mathcal{N}(0,1)) + f(y=1|Y \sim \mathcal{N}(2,3))} \\
+&\approx 0.5538
 \end{aligned}
 $$
 
 Calculation in R:
 ```{r}
 Y_H0 <- dnorm(x = 1, mean = 0, sd = sqrt(1) )
-Y_H1 <- dnorm(x = 1, mean = 2, sd = sqrt(2) )
+Y_H1 <- dnorm(x = 1, mean = 2, sd = sqrt(3) )
 
 H0_Y <- Y_H0 / (Y_H0 + Y_H1)
 H0_Y
