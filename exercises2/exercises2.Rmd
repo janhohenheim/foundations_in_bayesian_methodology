@@ -1,0 +1,41 @@
+---
+title: "Worksheet 02 Group 2"
+author:
+- "Andrea Staub"
+- "Emanuel Mauch"
+- "Guillaume Morlet"
+- "Holly Vuarnoz"
+- "Jan Hohenheim"
+- "Sophie Haldemann"
+output:
+  pdf_document: default
+  html_document:
+    df_print: paged
+---
+
+```{r setup, include=FALSE}
+# Set chunk options here 
+
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r, message = F}
+library(tidyverse)
+library(rjags)
+library(coda)
+library(bayesmeta)
+library(pCalibrate)
+```
+
+# Exercise 3
+
+TODO
+
+# Exercise 4
+
+TODO
+
+# Exercise 5
+
+TODO
+
