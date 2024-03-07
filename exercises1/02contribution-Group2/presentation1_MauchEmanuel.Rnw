@@ -1,0 +1,118 @@
+\documentclass[english]{beamer}
+
+%% The most common packages are already included in:
+\usetheme{biostat}
+\usepackage{xcolor}
+\usepackage{hyperref}
+
+%% Custom color for links (biostat blue)
+\definecolor{mylinkcolor}{RGB}{0,40,165}
+
+\hypersetup{
+  colorlinks=true,
+  urlcolor = mylinkcolor,
+  linkcolor=mylinkcolor,
+  urlcolor=mylinkcolor,
+  citecolor=mylinkcolor,
+  filecolor = mylinkcolor
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%% Header data: (adjust to your needs:
+\def\uzhunit{STA421 Foundations of Bayesian Methodology}             %% if (not) needed comment/uncomment
+%\def\uzhunitext{STA480}
+
+\title[The Binomial Distribution]{The Binomial Distribution}
+%% Optional Argument in [Brackets]: Short Title for Footline
+
+%% The following are all optional, simply comment them
+\subtitle{\textbf{Big picture: Session 2}}
+%%\institute{STA480 Statistical consulting}  %% optional
+\author{Group 2: Jan Hohenheim, Holly Vuarnoz, Sophie Haldemann,
+Andrea Staub, Guillaume Morlet and Emanuel Mauch}
+\date{\today}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+<<include=FALSE,purl=FALSE>>=
+library(knitr)
+opts_chunk$set(
+fig.path='figures/fig', fig.show='hold',
+	cache=TRUE, fig.height=4.5)
+@
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{document}
+\maketitle
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% Introduction
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}{Introduction}
+
+\begin{itemize}
+
+\item Derived by Jacob Bernoulli, posthumously published in 1713
+\item Discrete probability distribution
+\item Describes the \textcolor{mylinkcolor}{number of successes $x$} in a sequence of
+\textcolor{mylinkcolor}{$n$ independent experiments}, each with a binary outcome:
+success (with probability $p$) and failure (with probability $1-p$)
+\item For $n=1$, the Binomial distribution is a Bernoulli distribution
+
+\end{itemize}
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% Properties
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}{Properties}
+
+Probability mass function:
+
+\[
+f(x; n, p) = P(X = x) = \binom{n}{x} p^x (1-p)^{n-x}; x \in \{0, 1, 2, ...\}
+\]
+
+Expectation and Variance:
+\[
+E[X] = np \hspace{1cm} Var[X] = np(1-p)
+\]
+
+Functions in R:
+\texttt{dbinom} (PMF), \texttt{pbinom} (CDF), \texttt{qbinom} (Quantile function),
+\texttt{rbinom} (MC sampling)
+
+\end{frame}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% Example
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}{Example}
+
+<<echo=FALSE>>=
+n <- 40
+p <- c(0.3, 0.5, 0.7)
+x <- 0:n
+
+plot(x, dbinom(x, size = n, prob = p[1]), pch = 16, ylim = c(0, 0.20),
+     xlab = "Number of successes", ylab = "Probability", main = "Probability mass function",
+     col = "dodgerblue4", xlim = c(0, n))
+points(x, dbinom(x, size = n, prob = p[2]), pch = 16, col = "steelblue")
+points(x, dbinom(x, size = n, prob = p[3]), pch = 16, col = "gray60")
+legend("topright", legend = paste("p =", p, "n = 40"), col = c("dodgerblue4", "steelblue", "gray60"), pch = 16, cex = 0.8, bty = "n")
+@
+
+\end{frame}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}{References}
+   \footnotesize
+   \bibliographystyle{apalike}
+   \nocite{held2014}
+\bibliography{present1}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\end{document}
