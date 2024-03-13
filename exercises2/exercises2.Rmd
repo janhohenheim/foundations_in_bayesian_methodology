@@ -37,5 +37,213 @@ TODO
 
 # Exercise 5
 
-TODO
+For an interim analysis after 12 subjects, 3 adverse events were observed. In the final study after seeing 64 subjects, 14 adverse events were seen.  
+
+Compare the results obtained for the following two Beta priors at each stage:
+
+### (a) 
+
+alpha = beta = 0.5
+
+```{r}
+alpha_prior_a <- 0.5
+beta_prior_a <- 0.5
+
+n_interim <- 12
+nybar_interim <- 3
+
+n_final <- 64
+nybar_final <- 14
+```
+
+Posterior: $p|y \sim Beta(\alpha + n\bar{y} ,\ beta + n - n\bar{y})$
+
+```{r}
+
+alpha_interim_a <- alpha_prior_a + nybar_interim
+beta_interim_a <- beta_prior_a + n_interim - nybar_interim
+  
+alpha_final_a <- alpha_interim_a + (nybar_final - nybar_interim)
+beta_final_a <- beta_interim_a + (n_final - n_interim) - (nybar_final - nybar_interim)
+```
+
+
+How much evidence do you have for the probability of adverse events > 0.4 
+
+```{r}
+cat(paste0(
+  sprintf("Prior: P[p > 0.4] = %.4f\n", 1 - pbeta(0.4, alpha_prior_a, beta_prior_a)),
+  sprintf("Interim: P[p > 0.4] = %.4f\n", 1 - pbeta(0.4, alpha_interim_a, beta_interim_a)),
+  sprintf("Final: P[p > 0.4] = %.4f\n", 1 - pbeta(0.4, alpha_final_a, beta_final_a))))
+```
+
+Plot priors and posteriors at each stage.
+
+```{r}
+library(wesanderson)
+colors <- wes_palette(n=3, name="GrandBudapest1")
+
+p_range <- seq(0, 1, by = 0.001)
+
+plot(p_range, dbeta(p_range, alpha_prior_a, beta_prior_a), col = colors[1], 
+     type = "l", lwd = 2, ylim = c(0, 10), xlab = "probability of adverse events",
+     ylab = "density")
+lines(p_range, dbeta(p_range, alpha_interim_a, beta_interim_a), col = colors[2], lwd = 2)
+lines(p_range, dbeta(p_range, alpha_final_a, beta_final_a), col = colors[3], lwd = 2)
+legend("topright", 
+       legend = c(sprintf("prior: Beta(%g, %g)", alpha_prior_a, beta_prior_a),
+                  sprintf("interim: Beta(%g, %g)", alpha_interim_a, beta_interim_a),
+                  sprintf("final: Beta(%g, %g)", alpha_final_a, beta_final_a)), 
+       col = colors, bty = "n", lwd = 2)
+```
+
+\bigskip \bigskip
+
+What are the mean, median, and the equi-tailed 95% CrI of the distribution at each stage?
+
+1. Prior to seeing the data
+
+```{r}
+mean_prior_a <- alpha_prior_a / (alpha_prior_a + beta_prior_a)
+median_prior_a <- qbeta(0.5, alpha_prior_a, beta_prior_a)
+CrI95_prior_a <- qbeta( c(0.025, 0.975), alpha_prior_a, beta_prior_a)
+```
+
+
+```{r, echo = FALSE}
+cat(paste0(sprintf("Mean prior: %.3f\n", mean_prior_a), 
+    sprintf("Median prior: %.3f\n", median_prior_a), 
+    sprintf("95%% CrI prior: [%.3f, %.3f]", CrI95_prior_a[1], CrI95_prior_a[2])))
+
+```
+
+2. Interim
+
+```{r}
+mean_interim_a <- alpha_interim_a / (alpha_interim_a + beta_interim_a)
+median_interim_a <- qbeta(0.5, alpha_interim_a, beta_interim_a)
+CrI95_interim_a <- qbeta( c(0.025, 0.975), alpha_interim_a, beta_interim_a)
+```
+
+
+```{r, echo = FALSE}
+cat(paste0(sprintf("Mean interim: %.3f\n", mean_interim_a), 
+    sprintf("Median interim: %.3f\n", median_interim_a), 
+    sprintf("95%% CrI interim: [%.3f, %.3f]", CrI95_interim_a[1], CrI95_interim_a[2])))
+```
+
+3. Final
+
+```{r}
+mean_final_a <- alpha_final_a / (alpha_final_a + beta_final_a)
+median_final_a <- qbeta(0.5, alpha_final_a, beta_final_a)
+CrI95_final_a <- qbeta( c(0.025, 0.975), alpha_final_a, beta_final_a)
+```
+
+
+```{r, echo = FALSE}
+cat(paste0(sprintf("Mean final: %.3f\n", mean_final_a), 
+    sprintf("Median final: %.3f\n", median_final_a), 
+    sprintf("95%% CrI final: [%.3f, %.3f]", CrI95_final_a[1], CrI95_final_a[2])))
+```
+
+\bigskip
+
+### (b) 
+
+alpha = 8, beta = 24.  
+
+```{r}
+alpha_prior_b <- 8
+beta_prior_b <- 24
+```
+
+Posterior: $p|y \sim Beta(\alpha + n\bar{y} ,\ beta + n - n\bar{y})$
+
+```{r}
+alpha_interim_b <- alpha_prior_b + nybar_interim
+beta_interim_b <- beta_prior_b + n_interim - nybar_interim
+  
+alpha_final_b <- alpha_interim_b + (nybar_final - nybar_interim)
+beta_final_b <- beta_interim_b + (n_final - n_interim) - (nybar_final - nybar_interim)
+```
+
+
+How much evidence do you have for the probability of adverse events > 0.4 
+
+```{r}
+cat(paste0(
+  sprintf("Prior: P[p > 0.4] = %.4f\n", 1 - pbeta(0.4, alpha_prior_b, beta_prior_b)),
+  sprintf("Interim: P[p > 0.4] = %.4f\n", 1 - pbeta(0.4, alpha_interim_b, beta_interim_b)),
+  sprintf("Final: P[p > 0.4] = %.4f\n", 1 - pbeta(0.4, alpha_final_b, beta_final_b))))
+```
+
+Plot priors and posteriors at each stage.
+
+```{r}
+plot(p_range, dbeta(p_range, alpha_prior_b, beta_prior_b), col = colors[1], 
+     type = "l", lwd = 2, ylim = c(0, 10), xlab = "probability of adverse events",
+     ylab = "density")
+lines(p_range, dbeta(p_range, alpha_interim_b, beta_interim_b), col = colors[2], lwd = 2)
+lines(p_range, dbeta(p_range, alpha_final_b, beta_final_b), col = colors[3], lwd = 2)
+legend("topright", 
+       legend = c(sprintf("prior: Beta(%g, %g)", alpha_prior_b, beta_prior_b),
+                  sprintf("interim: Beta(%g, %g)", alpha_interim_b, beta_interim_b),
+                  sprintf("final: Beta(%g, %g)", alpha_final_b, beta_final_b)), 
+       col = colors, bty = "n", lwd = 2)
+```
+
+\bigskip \bigskip
+
+What are the mean, median, and the equi-tailed 95% CrI of the distribution at each stage?
+
+1. Prior to seeing the data
+
+```{r}
+mean_prior_b <- alpha_prior_b / (alpha_prior_b + beta_prior_b)
+median_prior_b <- qbeta(0.5, alpha_prior_b, beta_prior_b)
+CrI95_prior_b <- qbeta( c(0.025, 0.975), alpha_prior_b, beta_prior_b)
+```
+
+
+```{r, echo = FALSE}
+cat(paste0(sprintf("Mean prior: %.3f\n", mean_prior_b), 
+    sprintf("Median prior: %.3f\n", median_prior_b), 
+    sprintf("95%% CrI prior: [%.3f, %.3f]", CrI95_prior_b[1], CrI95_prior_b[2])))
+
+```
+
+2. Interim
+
+```{r}
+mean_interim_b <- alpha_interim_b / (alpha_interim_b + beta_interim_b)
+median_interim_b <- qbeta(0.5, alpha_interim_b, beta_interim_b)
+CrI95_interim_b <- qbeta( c(0.025, 0.975), alpha_interim_b, beta_interim_b)
+```
+
+
+```{r, echo = FALSE}
+cat(paste0(sprintf("Mean interim: %.3f\n", mean_interim_b), 
+    sprintf("Median interim: %.3f\n", median_interim_b), 
+    sprintf("95%% CrI interim: [%.3f, %.3f]", CrI95_interim_b[1], CrI95_interim_b[2])))
+```
+
+3. Final
+
+```{r}
+mean_final_b <- alpha_final_b / (alpha_final_b + beta_final_b)
+median_final_b <- qbeta(0.5, alpha_final_b, beta_final_b)
+CrI95_final_b <- qbeta( c(0.025, 0.975), alpha_final_b, beta_final_b)
+```
+
+
+```{r, echo = FALSE}
+cat(paste0(sprintf("Mean final: %.3f\n", mean_final_b), 
+    sprintf("Median final: %.3f\n", median_final_b), 
+    sprintf("95%% CrI final: [%.3f, %.3f]", CrI95_final_b[1], CrI95_final_b[2])))
+```
+
+
+Interpretation/Conclusion:  
+...
 
