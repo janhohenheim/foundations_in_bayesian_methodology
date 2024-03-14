@@ -29,7 +29,7 @@ library(pCalibrate)
 
 # Exercise 3
 
-TODO
+TODO: Add figure
 
 $$
 m|y_{1:n} \sim \mathcal{N}(\frac{kn\bar{y} + \lambda\mu}{kn + \lambda}, \frac{1}{kn + \lambda})
@@ -104,7 +104,7 @@ glue::glue("95% CI:")
 qnorm(c(0.025, 0.975), u, std_dev)
 glue::glue("P[X > 200] = {1 - pnorm(200, u, std_dev)}")
 ```
-
+TODO: Use CrI instead of CI!
 Our prior distribution tells us that the mean is probably around 161 cm and probably not below 144 cm or above 178 cm. It is extremely unlikely that the mean is above 200 cm.
 
 ## c)
@@ -134,6 +134,7 @@ glue::glue("Posterior median: {u_posterior}")
 glue::glue("Posterior 95% CI:")
 qnorm(c(0.025, 0.975), u_posterior, std_dev_posterior)
 ```
+TODO: Use CrI instead of CI!
 
 Based on our data, we shifted our mean estimate from 161 cm to 164.6 cm. We now know that the true mean is probably between 153 cm and 176 cm. As we have more data to work with, our uncertainty expressed by the standard deviation has decreased, and thus our 95% CI is narrower.
 
@@ -147,8 +148,9 @@ Our posterior tells us that it is almost impossible that the true mean is above 
 
 ## e)
 
-TODO moments
-The prior already has an extremely low confidence in the true mean being above 200 cm. The posterior is even more confident in this, making it almost impossible.
+- Mean: The mean of our posterior went from 161 cm to 164.6 cm. Our estimate from the true mean has increased a bit.
+- Standard deviation: The standard deviation of our posterior has decreased from 8.4 cm to 5.9 cm. This means that we are more certain about our estimate, which makes sense, as we incorporate more data.
+- The prior already has an extremely low confidence in the true mean being above 200 cm. The posterior is even more confident in this, making it almost impossible. This is interesting, as the mean of the posterior has increased compared to the prior, but the higher value is actually less plausible because of the lower standard deviation.
 
 # Exercise 5
 
@@ -251,6 +253,7 @@ mean_final_a <- alpha_final_a / (alpha_final_a + beta_final_a)
 median_final_a <- qbeta(0.5, alpha_final_a, beta_final_a)
 CrI95_final_a <- qbeta( c(0.025, 0.975), alpha_final_a, beta_final_a)
 ```
+
 
 ```{r, echo = FALSE}
 cat(paste0(sprintf("Mean final: %.3f\n", mean_final_a), 
