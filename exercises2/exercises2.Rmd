@@ -78,7 +78,7 @@ ci <- mean + c(-1, 1) * t * std_err
 ci
 
 # or, alternatively
-t.test(dat$y)
+confint(lm(y ~ 1, data = dat))
 ```
 
 If we sampled the height of another female, there is a 95% chance of it being (inclusively) between 165 cm and 171 cm.
