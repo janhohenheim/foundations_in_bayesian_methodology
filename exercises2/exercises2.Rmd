@@ -91,8 +91,7 @@ std_dev <- 1/sqrt(l)
 tibble(x = u + 30 * c(-1, 1)) |>
   ggplot(data = , aes(x)) +
   stat_function(fun = dnorm, n = 101, args = list(mean = u, sd = std_dev), linewidth = 2) + 
-  ylab("") +
-  scale_y_continuous(breaks = NULL) +
+  ylab("P[x = X]") +
   ggtitle("Prior distribution")
 ```
 
@@ -122,8 +121,7 @@ tibble(x = u_posterior + 30 * c(-1, 1)) |>
   ggplot(data = , aes(x)) +
   stat_function(fun = dnorm, n = 101, args = list(mean = u_prior, sd = std_dev_prior), linewidth = 2, aes(color = "Prior")) +
   stat_function(fun = dnorm, n = 101, args = list(mean = u_posterior, sd = std_dev_posterior), linewidth = 2, aes(color = "Posterior")) +
-  ylab("") +
-  scale_y_continuous(breaks = NULL) +
+  ylab("P[x = X]") +
   ggtitle("Prior and posterior distribution")
 ```
 
