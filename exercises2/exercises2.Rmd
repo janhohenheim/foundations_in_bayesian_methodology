@@ -31,17 +31,132 @@ library(pCalibrate)
 
 TODO
 
+$$
+m|y_{1:n} \sim \mathcal{N}(\frac{kn\bar{y} + \lambda\mu}{kn + \lambda}, \frac{1}{kn + \lambda})
+$$
+
 # Exercise 4
 
-TODO
+Per exercise 3:
+
+$$
+m|y_{1:n} \sim \mathcal{N}(\frac{kn\bar{y} + \lambda\mu}{kn + \lambda}, \frac{1}{kn + \lambda})
+$$
+
+```{r}
+dat <- tibble(y = c(166, 168, 168, 177, 160, 170, 172, 159, 175, 164, 175, 167, 164))
+k <- 1/900
+u <- 161
+l <- 1/70
+```
+
+## a)
+
+```{r}
+dat |> summary()
+dat |> ggplot(aes(x = y)) +
+  geom_histogram(binwidth = 1) +
+  ggtitle("Histogram")
+dat |> ggplot(aes(sample = y)) +
+  stat_qq() +
+  ggtitle("QQ-plot")
+dat |> ggplot(aes(y = y)) +
+  geom_boxplot() +
+  ggtitle("Boxplot")
+```
+
+The QQ plot tells us that the data is probably normally distributed, the boxplot shows that there are no outliers.
+
+```{r}
+alpha <- 0.05 / 2 # two tailed
+n <- length(dat$y)
+mean <- mean(dat$y)
+std_dev <- sd(dat$y)
+std_err <- std_dev / sqrt(n)
+t <- qt(1 - alpha, df = n - 1)
+ci <- mean + c(-1, 1) * t * std_err
+ci
+
+# or, alternatively
+t.test(dat$y)
+```
+
+If we sampled the height of another female, there is a 95% chance of it being (inclusively) between 165 cm and 171 cm.
+
+## b)
+
+```{r}
+std_dev <- 1/sqrt(l)
+
+tibble(x = u + 30 * c(-1, 1)) |>
+  ggplot(data = , aes(x)) +
+  stat_function(fun = dnorm, n = 101, args = list(mean = u, sd = std_dev), linewidth = 2) + 
+  ylab("") +
+  scale_y_continuous(breaks = NULL) +
+  ggtitle("Prior distribution")
+```
+
+```{r,results = "hold"}
+glue::glue("Prior mean: {u}")
+glue::glue("Prior standard deviation: {std_dev}")
+glue::glue("Prior median: {u}")
+glue::glue("95% CI:")
+qnorm(c(0.025, 0.975), u, std_dev)
+glue::glue("P[X > 200] = {1 - pnorm(200, u, std_dev)}")
+```
+
+Our prior distribution tells us that the mean is probably around 161 cm and probably not below 144 cm or above 178 cm. It is extremely unlikely that the mean is above 200 cm.
+
+## c)
+
+```{r}
+u_prior <- u
+std_dev_prior <- std_dev
+mean_y = mean(dat$y)
+u_posterior <- (k * n * mean_y + l * u_prior) / (k * n + l)
+std_dev_posterior <- 1 / sqrt(k * n + l)
+```
+
+```{r}
+tibble(x = u_posterior + 30 * c(-1, 1)) |>
+  ggplot(data = , aes(x)) +
+  stat_function(fun = dnorm, n = 101, args = list(mean = u_prior, sd = std_dev_prior), linewidth = 2, aes(color = "Prior")) +
+  stat_function(fun = dnorm, n = 101, args = list(mean = u_posterior, sd = std_dev_posterior), linewidth = 2, aes(color = "Posterior")) +
+  ylab("") +
+  scale_y_continuous(breaks = NULL) +
+  ggtitle("Prior and posterior distribution")
+```
+
+```{r,results = "hold"}
+glue::glue("Posterior mean: {u_posterior}")
+glue::glue("Posterior standard deviation: {std_dev_posterior}")
+glue::glue("Posterior median: {u_posterior}")
+glue::glue("Posterior 95% CI:")
+qnorm(c(0.025, 0.975), u_posterior, std_dev_posterior)
+```
+
+Based on our data, we shifted our mean estimate from 161 cm to 164.6 cm. We now know that the true mean is probably between 153 cm and 176 cm. As we have more data to work with, our uncertainty expressed by the standard deviation has decreased, and thus our 95% CI is narrower.
+
+## d)
+
+```{r, result = "hold"}
+glue::glue("P[X > 200] = {1 - pnorm(200, u_posterior, std_dev_posterior)}")
+```
+
+Our posterior tells us that it is almost impossible that the true mean is above 200 cm.
+
+## e)
+
+TODO moments
+The prior already has an extremely low confidence in the true mean being above 200 cm. The posterior is even more confident in this, making it almost impossible.
 
 # Exercise 5
 
-For an interim analysis after 12 subjects, 3 adverse events were observed. In the final study after seeing 64 subjects, 14 adverse events were seen.  
+For an interim analysis after 12 subjects, 3 adverse events were observed. In the final study after seeing 64 subjects, 14 adverse events were seen.
 
 Compare the results obtained for the following two Beta priors at each stage:
 
-### (a) 
+### (a)
 
 alpha = beta = 0.5
 
@@ -67,8 +182,7 @@ alpha_final_a <- alpha_interim_a + (nybar_final - nybar_interim)
 beta_final_a <- beta_interim_a + (n_final - n_interim) - (nybar_final - nybar_interim)
 ```
 
-
-How much evidence do you have for the probability of adverse events > 0.4 
+How much evidence do you have for the probability of adverse events \> 0.4
 
 ```{r}
 cat(paste0(
@@ -101,14 +215,13 @@ legend("topright",
 
 What are the mean, median, and the equi-tailed 95% CrI of the distribution at each stage?
 
-1. Prior to seeing the data
+1.  Prior to seeing the data
 
 ```{r}
 mean_prior_a <- alpha_prior_a / (alpha_prior_a + beta_prior_a)
 median_prior_a <- qbeta(0.5, alpha_prior_a, beta_prior_a)
 CrI95_prior_a <- qbeta( c(0.025, 0.975), alpha_prior_a, beta_prior_a)
 ```
-
 
 ```{r, echo = FALSE}
 cat(paste0(sprintf("Mean prior: %.3f\n", mean_prior_a), 
@@ -117,7 +230,7 @@ cat(paste0(sprintf("Mean prior: %.3f\n", mean_prior_a),
 
 ```
 
-2. Interim
+2.  Interim
 
 ```{r}
 mean_interim_a <- alpha_interim_a / (alpha_interim_a + beta_interim_a)
@@ -125,21 +238,19 @@ median_interim_a <- qbeta(0.5, alpha_interim_a, beta_interim_a)
 CrI95_interim_a <- qbeta( c(0.025, 0.975), alpha_interim_a, beta_interim_a)
 ```
 
-
 ```{r, echo = FALSE}
 cat(paste0(sprintf("Mean interim: %.3f\n", mean_interim_a), 
     sprintf("Median interim: %.3f\n", median_interim_a), 
     sprintf("95%% CrI interim: [%.3f, %.3f]", CrI95_interim_a[1], CrI95_interim_a[2])))
 ```
 
-3. Final
+3.  Final
 
 ```{r}
 mean_final_a <- alpha_final_a / (alpha_final_a + beta_final_a)
 median_final_a <- qbeta(0.5, alpha_final_a, beta_final_a)
 CrI95_final_a <- qbeta( c(0.025, 0.975), alpha_final_a, beta_final_a)
 ```
-
 
 ```{r, echo = FALSE}
 cat(paste0(sprintf("Mean final: %.3f\n", mean_final_a), 
@@ -149,9 +260,9 @@ cat(paste0(sprintf("Mean final: %.3f\n", mean_final_a),
 
 \bigskip
 
-### (b) 
+### (b)
 
-alpha = 8, beta = 24.  
+alpha = 8, beta = 24.
 
 ```{r}
 alpha_prior_b <- 8
@@ -168,8 +279,7 @@ alpha_final_b <- alpha_interim_b + (nybar_final - nybar_interim)
 beta_final_b <- beta_interim_b + (n_final - n_interim) - (nybar_final - nybar_interim)
 ```
 
-
-How much evidence do you have for the probability of adverse events > 0.4 
+How much evidence do you have for the probability of adverse events \> 0.4
 
 ```{r}
 cat(paste0(
@@ -197,14 +307,13 @@ legend("topright",
 
 What are the mean, median, and the equi-tailed 95% CrI of the distribution at each stage?
 
-1. Prior to seeing the data
+1.  Prior to seeing the data
 
 ```{r}
 mean_prior_b <- alpha_prior_b / (alpha_prior_b + beta_prior_b)
 median_prior_b <- qbeta(0.5, alpha_prior_b, beta_prior_b)
 CrI95_prior_b <- qbeta( c(0.025, 0.975), alpha_prior_b, beta_prior_b)
 ```
-
 
 ```{r, echo = FALSE}
 cat(paste0(sprintf("Mean prior: %.3f\n", mean_prior_b), 
@@ -213,7 +322,7 @@ cat(paste0(sprintf("Mean prior: %.3f\n", mean_prior_b),
 
 ```
 
-2. Interim
+2.  Interim
 
 ```{r}
 mean_interim_b <- alpha_interim_b / (alpha_interim_b + beta_interim_b)
@@ -221,14 +330,13 @@ median_interim_b <- qbeta(0.5, alpha_interim_b, beta_interim_b)
 CrI95_interim_b <- qbeta( c(0.025, 0.975), alpha_interim_b, beta_interim_b)
 ```
 
-
 ```{r, echo = FALSE}
 cat(paste0(sprintf("Mean interim: %.3f\n", mean_interim_b), 
     sprintf("Median interim: %.3f\n", median_interim_b), 
     sprintf("95%% CrI interim: [%.3f, %.3f]", CrI95_interim_b[1], CrI95_interim_b[2])))
 ```
 
-3. Final
+3.  Final
 
 ```{r}
 mean_final_b <- alpha_final_b / (alpha_final_b + beta_final_b)
@@ -236,14 +344,11 @@ median_final_b <- qbeta(0.5, alpha_final_b, beta_final_b)
 CrI95_final_b <- qbeta( c(0.025, 0.975), alpha_final_b, beta_final_b)
 ```
 
-
 ```{r, echo = FALSE}
 cat(paste0(sprintf("Mean final: %.3f\n", mean_final_b), 
     sprintf("Median final: %.3f\n", median_final_b), 
     sprintf("95%% CrI final: [%.3f, %.3f]", CrI95_final_b[1], CrI95_final_b[2])))
 ```
 
-
-Interpretation/Conclusion:  
+Interpretation/Conclusion:\
 ...
-
