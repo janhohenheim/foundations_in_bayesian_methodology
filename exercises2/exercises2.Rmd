@@ -25,6 +25,7 @@ library(rjags)
 library(coda)
 library(bayesmeta)
 library(pCalibrate)
+library(glue)
 ```
 
 # Exercise 3
@@ -184,11 +185,10 @@ beta_final_a <- beta_interim_a + (n_final - n_interim) - (nybar_final - nybar_in
 
 How much evidence do you have for the probability of adverse events \> 0.4
 
-```{r}
-cat(paste0(
-  sprintf("Prior: P[p > 0.4] = %.4f\n", 1 - pbeta(0.4, alpha_prior_a, beta_prior_a)),
-  sprintf("Interim: P[p > 0.4] = %.4f\n", 1 - pbeta(0.4, alpha_interim_a, beta_interim_a)),
-  sprintf("Final: P[p > 0.4] = %.4f\n", 1 - pbeta(0.4, alpha_final_a, beta_final_a))))
+```{r, results = "hold"}
+glue("Prior: P[p > 0.4] = {formatC(1 - pbeta(0.4, alpha_prior_a, beta_prior_a), 4)}")
+glue("Interim: P[p > 0.4] = {formatC(1 - pbeta(0.4, alpha_interim_a, beta_interim_a), 4)}")
+glue("Final: P[p > 0.4] = {formatC(1 - pbeta(0.4, alpha_final_a, beta_final_a), 4)}")
 ```
 
 Plot priors and posteriors at each stage.
@@ -223,11 +223,10 @@ median_prior_a <- qbeta(0.5, alpha_prior_a, beta_prior_a)
 CrI95_prior_a <- qbeta( c(0.025, 0.975), alpha_prior_a, beta_prior_a)
 ```
 
-```{r, echo = FALSE}
-cat(paste0(sprintf("Mean prior: %.3f\n", mean_prior_a), 
-    sprintf("Median prior: %.3f\n", median_prior_a), 
-    sprintf("95%% CrI prior: [%.3f, %.3f]", CrI95_prior_a[1], CrI95_prior_a[2])))
-
+```{r, results = "hold"}
+glue("Mean prior: {formatC(mean_prior_a, format = 'f', 3)}")
+glue("Median prior: {formatC(median_prior_a, format = 'f', 3)}")
+glue("95% CrI prior: [{formatC(CrI95_prior_a[1], 3)}, {formatC(CrI95_prior_a[2], format ='f', 3)}]")
 ```
 
 2.  Interim
@@ -238,10 +237,11 @@ median_interim_a <- qbeta(0.5, alpha_interim_a, beta_interim_a)
 CrI95_interim_a <- qbeta( c(0.025, 0.975), alpha_interim_a, beta_interim_a)
 ```
 
-```{r, echo = FALSE}
-cat(paste0(sprintf("Mean interim: %.3f\n", mean_interim_a), 
-    sprintf("Median interim: %.3f\n", median_interim_a), 
-    sprintf("95%% CrI interim: [%.3f, %.3f]", CrI95_interim_a[1], CrI95_interim_a[2])))
+```{r, results = "hold"}
+glue("Mean prior: {formatC(mean_interim_a, format = 'f', 3)}")
+glue("Median prior: {formatC(median_interim_a, format = 'f', 3)}")
+glue("95% CrI prior: [{formatC(CrI95_interim_a[1], 3)},{formatC(CrI95_interim_a[2], format ='f', 3)}]")
+
 ```
 
 3.  Final
@@ -253,10 +253,10 @@ CrI95_final_a <- qbeta( c(0.025, 0.975), alpha_final_a, beta_final_a)
 ```
 
 
-```{r, echo = FALSE}
-cat(paste0(sprintf("Mean final: %.3f\n", mean_final_a), 
-    sprintf("Median final: %.3f\n", median_final_a), 
-    sprintf("95%% CrI final: [%.3f, %.3f]", CrI95_final_a[1], CrI95_final_a[2])))
+```{r, results = "hold"}
+glue("Mean prior: {formatC(mean_final_a, format = 'f', 3)}")
+glue("Median prior: {formatC(median_final_a, format = 'f', 3)}")
+glue("95% CrI prior: [{formatC(CrI95_final_a[1], 3)}, {formatC(CrI95_final_a[2], format ='f', 3)}]")
 ```
 
 \bigskip
@@ -282,11 +282,10 @@ beta_final_b <- beta_interim_b + (n_final - n_interim) - (nybar_final - nybar_in
 
 How much evidence do you have for the probability of adverse events \> 0.4
 
-```{r}
-cat(paste0(
-  sprintf("Prior: P[p > 0.4] = %.4f\n", 1 - pbeta(0.4, alpha_prior_b, beta_prior_b)),
-  sprintf("Interim: P[p > 0.4] = %.4f\n", 1 - pbeta(0.4, alpha_interim_b, beta_interim_b)),
-  sprintf("Final: P[p > 0.4] = %.4f\n", 1 - pbeta(0.4, alpha_final_b, beta_final_b))))
+```{r, results = "hold"}
+glue("Prior: P[p > 0.4] = {formatC(1 - pbeta(0.4, alpha_prior_b, beta_prior_b), 4)}")
+glue("Interim: P[p > 0.4] = {formatC(1 - pbeta(0.4, alpha_interim_b, beta_interim_b), 4)}")
+glue("Final: P[p > 0.4] = {formatC(1 - pbeta(0.4, alpha_final_b, beta_final_b), 4)}")
 ```
 
 Plot priors and posteriors at each stage.
@@ -316,11 +315,10 @@ median_prior_b <- qbeta(0.5, alpha_prior_b, beta_prior_b)
 CrI95_prior_b <- qbeta( c(0.025, 0.975), alpha_prior_b, beta_prior_b)
 ```
 
-```{r, echo = FALSE}
-cat(paste0(sprintf("Mean prior: %.3f\n", mean_prior_b), 
-    sprintf("Median prior: %.3f\n", median_prior_b), 
-    sprintf("95%% CrI prior: [%.3f, %.3f]", CrI95_prior_b[1], CrI95_prior_b[2])))
-
+```{r, results = "hold"}
+glue("Mean prior: {formatC(mean_prior_b, format = 'f', 3)}")
+glue("Median prior: {formatC(median_prior_b, format = 'f', 3)}")
+glue("95% CrI prior: [{formatC(CrI95_prior_b[1], 3)}, {formatC(CrI95_prior_b[2], format ='f', 3)}]")
 ```
 
 2.  Interim
@@ -331,10 +329,10 @@ median_interim_b <- qbeta(0.5, alpha_interim_b, beta_interim_b)
 CrI95_interim_b <- qbeta( c(0.025, 0.975), alpha_interim_b, beta_interim_b)
 ```
 
-```{r, echo = FALSE}
-cat(paste0(sprintf("Mean interim: %.3f\n", mean_interim_b), 
-    sprintf("Median interim: %.3f\n", median_interim_b), 
-    sprintf("95%% CrI interim: [%.3f, %.3f]", CrI95_interim_b[1], CrI95_interim_b[2])))
+```{r, results = "hold"}
+glue("Mean prior: {formatC(mean_interim_b, format = 'f', 3)}")
+glue("Median prior: {formatC(median_interim_b, format = 'f', 3)}")
+glue("95% CrI prior: [{formatC(CrI95_interim_b[1], 3)}, {formatC(CrI95_interim_b[2], format ='f',3)}]")
 ```
 
 3.  Final
@@ -345,11 +343,9 @@ median_final_b <- qbeta(0.5, alpha_final_b, beta_final_b)
 CrI95_final_b <- qbeta( c(0.025, 0.975), alpha_final_b, beta_final_b)
 ```
 
-```{r, echo = FALSE}
-cat(paste0(sprintf("Mean final: %.3f\n", mean_final_b), 
-    sprintf("Median final: %.3f\n", median_final_b), 
-    sprintf("95%% CrI final: [%.3f, %.3f]", CrI95_final_b[1], CrI95_final_b[2])))
+```{r, results = "hold"}
+glue("Mean prior: {formatC(mean_final_b, format = 'f', 3)}")
+glue("Median prior: {formatC(median_final_b, format = 'f', 3)}")
+glue("95% CrI prior: [{formatC(CrI95_final_b[1], 3)}, {formatC(CrI95_final_b[2], format ='f', 3)}]")
 ```
 
-Interpretation/Conclusion:\
-...
