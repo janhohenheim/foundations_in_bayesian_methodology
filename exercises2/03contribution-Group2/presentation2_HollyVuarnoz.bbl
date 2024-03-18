@@ -1,0 +1,20 @@
+\begin{thebibliography}{}
+
+\bibitem[Harrison et~al., 2010]{Harrison2010}
+Harrison, R.~L., Granja, C., and Leroy, C. (2010).
+\newblock Introduction to monte carlo simulation.
+\newblock \url{http://dx.doi.org/10.1063/1.3295638}.
+
+\bibitem[Held and Sabanes~Bove, 2014]{held2014}
+Held, L. and Sabanes~Bove, D. (2014).
+\newblock {\em Applied Statistical Inference: Likelihood and Bayes}.
+\newblock Springer.
+\newblock \url{https://doi.org/10.1007/978-3-642-37887-4}.
+
+\bibitem[MarbleScience, 2020]{Marble2020}
+MarbleScience (2020).
+\newblock Monte carlo simulation [video].
+\newblock \url{https://www.youtube.com/watch?v=7ESK5SaP-bc} [Accessed:
+  2024-03-16].
+
+\end{thebibliography}
