@@ -30,11 +30,10 @@ library(glue)
 
 # Exercise 3
 
-TODO: Add figure
+See figures below  
+![Exercise 3 Part 1](exercise3_1.png){width=60% height=60%}  
+![Exercise 3 Part 2](exercise3_2.png){width=60% height=60%}
 
-$$
-m|y_{1:n} \sim \mathcal{N}(\frac{kn\bar{y} + \lambda\mu}{kn + \lambda}, \frac{1}{kn + \lambda})
-$$
 
 # Exercise 4
 
@@ -82,7 +81,7 @@ ci
 confint(lm(y ~ 1, data = dat))
 ```
 
-If we sampled the height of another female, there is a 95% chance of it being (inclusively) between 165 cm and 171 cm.
+The correct frequentist interpretation of the confidence interval is tricky. Strictly, the 95% confidence interval says that if we were to sample from the same population many times and calculated the 95% confidence interval each time, 95% of these intervals would contain the true mean. The more commonly used interpretation is that the true mean is probably between 165 cm and 171 cm.
 
 ## b)
 
@@ -92,19 +91,21 @@ std_dev <- 1/sqrt(l)
 tibble(x = u + 30 * c(-1, 1)) |>
   ggplot(data = , aes(x)) +
   stat_function(fun = dnorm, n = 101, args = list(mean = u, sd = std_dev), linewidth = 2) + 
-  ylab("P[x = X]") +
-  ggtitle("Prior distribution")
+  labs(
+    title = "Prior distribution",
+    x = "m",
+    y = "Density"
+  )
 ```
 
 ```{r,results = "hold"}
-glue::glue("Prior mean: {u}")
-glue::glue("Prior standard deviation: {std_dev}")
-glue::glue("Prior median: {u}")
-glue::glue("95% CI:")
+glue::glue("Prior mean: {u} cm")
+glue::glue("Prior standard deviation: {std_dev} cm")
+glue::glue("Prior median: {u} cm")
+glue::glue("95% CrI:")
 qnorm(c(0.025, 0.975), u, std_dev)
-glue::glue("P[X > 200] = {1 - pnorm(200, u, std_dev)}")
+glue::glue("P[X > 200] = {1 - pnorm(200, u, std_dev)} cm")
 ```
-TODO: Use CrI instead of CI!
 Our prior distribution tells us that the mean is probably around 161 cm and probably not below 144 cm or above 178 cm. It is extremely unlikely that the mean is above 200 cm.
 
 ## c)
@@ -122,20 +123,22 @@ tibble(x = u_posterior + 30 * c(-1, 1)) |>
   ggplot(data = , aes(x)) +
   stat_function(fun = dnorm, n = 101, args = list(mean = u_prior, sd = std_dev_prior), linewidth = 2, aes(color = "Prior")) +
   stat_function(fun = dnorm, n = 101, args = list(mean = u_posterior, sd = std_dev_posterior), linewidth = 2, aes(color = "Posterior")) +
-  ylab("P[x = X]") +
-  ggtitle("Prior and posterior distribution")
+  labs(
+    title = "Prior and posterior distribution",
+    x = "m",
+    y = "Density"
+  )
 ```
 
 ```{r,results = "hold"}
-glue::glue("Posterior mean: {u_posterior}")
-glue::glue("Posterior standard deviation: {std_dev_posterior}")
-glue::glue("Posterior median: {u_posterior}")
-glue::glue("Posterior 95% CI:")
+glue::glue("Posterior mean: {u_posterior} cm")
+glue::glue("Posterior standard deviation: {std_dev_posterior} cm")
+glue::glue("Posterior median: {u_posterior} cm")
+glue::glue("Posterior 95% CrI:")
 qnorm(c(0.025, 0.975), u_posterior, std_dev_posterior)
 ```
-TODO: Use CrI instead of CI!
 
-Based on our data, we shifted our mean estimate from 161 cm to 164.6 cm. We now know that the true mean is probably between 153 cm and 176 cm. As we have more data to work with, our uncertainty expressed by the standard deviation has decreased, and thus our 95% CI is narrower.
+Based on our data, we shifted our mean estimate from 161 cm to 164.6 cm. We now know that the true mean is probably between 153 cm and 176 cm. As we have more data to work with, our uncertainty expressed by the standard deviation has decreased, and thus our 95% CrI is narrower.
 
 ## d)
 
@@ -195,7 +198,7 @@ Plot priors and posteriors at each stage.
 
 ```{r}
 library(wesanderson)
-colors <- wes_palette(n=3, name="GrandBudapest1")
+colors <- wes_palette(n = 3, name = "GrandBudapest1")
 
 p_range <- seq(0, 1, by = 0.001)
 
