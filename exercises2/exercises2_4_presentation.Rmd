@@ -1,0 +1,181 @@
+---
+title: "Worksheet 02 Group 2 Exercise 4"
+author:
+- "Andrea Staub"
+- "Emanuel Mauch"
+- "Holly Vuarnoz"
+- "Jan Hohenheim (that's me!)"
+- "Sophie Haldemann"
+output:
+  pdf_document: default
+  html_document:
+    df_print: paged
+---
+
+```{r setup, include=FALSE}
+# Set chunk options here 
+
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r, message = F}
+library(tidyverse)
+library(glue)
+library(ggthemes)
+
+theme_set(theme_solarized_2())
+```
+
+
+# Exercise 4
+
+Per exercise 3:
+
+$$
+m|y_{1:n} \sim \mathcal{N}(\frac{kn\bar{y} + \lambda\mu}{kn + \lambda}, \frac{1}{kn + \lambda})
+$$
+
+In our the code:
+$$
+\begin{aligned}
+  k := k\\
+  u := \mu \\
+  l := \lambda
+\end{aligned}
+$$
+With the given data:
+
+```{r}
+dat <- tibble(y = c(166, 168, 168, 177, 160, 170, 172, 159, 175, 164, 175, 167, 164))
+k <- 1/900
+u <- 161
+l <- 1/70
+```
+
+## a)
+
+```{r}
+dat |> summary()
+```
+\pagebreak
+```{r}
+dat |> 
+  ggplot(aes(x = y)) +
+  geom_histogram(binwidth = 1) +
+  ggtitle("Histogram")
+```
+\pagebreak
+```{r}
+dat |> 
+  ggplot(aes(sample = y)) +
+  stat_qq() +
+  ggtitle("QQ-plot")
+```
+The QQ plot tells us that the data is probably normally distributed
+\pagebreak
+```{r}
+dat |> 
+  ggplot(aes(y = y)) +
+  geom_boxplot() +
+  ggtitle("Boxplot")
+```
+The boxplot shows that there are no obvious outliers.
+\pagebreak
+
+```{r}
+alpha <- 0.05 / 2 # two tailed
+n <- length(dat$y)
+mean <- mean(dat$y)
+std_dev <- sd(dat$y)
+std_err <- std_dev / sqrt(n)
+t <- qt(1 - alpha, df = n - 1)
+ci <- mean + c(-1, 1) * t * std_err
+ci
+
+# or, alternatively
+confint(lm(y ~ 1, data = dat))
+```
+
+The correct frequentist interpretation of the confidence interval is tricky. Strictly, the 95% confidence interval says that if we were to sample from the same population many times and calculated the 95% confidence interval each time, 95% of these intervals would contain the true mean. The more commonly used interpretation is that the true mean is probably between 165 cm and 171 cm.
+\pagebreak
+
+## b)
+
+```{r}
+ggnorm <- function(mean, sd, Distribution) {
+  stat_function(
+    fun = dnorm, 
+    n = 101, 
+    args = list(mean, sd), 
+    linewidth = 2, 
+    aes(color = Distribution)
+  )
+}
+
+std_dev <- 1/sqrt(l)
+
+tibble(x = u + 30 * c(-1, 1)) |>
+  ggplot(data = , aes(x)) +
+  ggnorm(u, std_dev, "Prior") +
+  labs(
+    x = "m",
+    y = "Density"
+  ) +
+  scale_colour_solarized()
+```
+\pagebreak
+```{r,results = "hold"}
+pretty <- function(n) {
+  # round to 2 decimal places
+  n |> 
+    round(2) |>
+    format(nsmall = 2)
+}
+glue("Prior mean: {pretty(u)} cm")
+glue("Prior standard deviation: {pretty(std_dev)} cm")
+glue("Prior median: {pretty(u)} cm")
+ci_prior <- qnorm(c(0.025, 0.975), u, std_dev)
+glue("95% CrI: [{pretty(ci_prior[1])} cm, {pretty(ci_prior[2])} cm]")
+glue("(95% CI for data: [{pretty(ci[1])} cm, {pretty(ci[2])} cm])")
+glue("P[X > 200] = {1 - pnorm(200, u, std_dev)} cm")
+```
+Our prior distribution tells us that the mean is probably around 161 cm and probably not below 144 cm or above 178 cm. It is extremely unlikely that the mean is above 200 cm.
+\pagebreak
+
+## c)
+
+$$
+m|y_{1:n} \sim \mathcal{N}(\frac{kn\bar{y} + \lambda\mu}{kn + \lambda}, \frac{1}{kn + \lambda})
+$$
+
+```{r}
+u_prior <- u
+std_dev_prior <- std_dev
+mean_y = mean(dat$y)
+u_posterior <- (k * n * mean_y + l * u_prior) / (k * n + l)
+std_dev_posterior <- 1 / sqrt(k * n + l)
+```
+\pagebreak
+```{r}
+tibble(x = u_posterior + 30 * c(-1, 1)) |>
+  ggplot(data = , aes(x)) +
+  ggnorm(u_prior, std_dev_prior, "Prior") +
+  ggnorm(u_posterior, std_dev_posterior, "Posterior") +
+  labs(
+    x = "m",
+    y = "Density"
+  ) +
+  scale_colour_solarized()
+```
+\pagebreak
+```{r,results = "hold"}
+glue("Prior -> Posterior")
+glue("mean: {u_prior} -> {pretty(u_posterior)} cm")
+glue("standard deviation: {pretty(std_dev_prior)} -> {pretty(std_dev_posterior)} cm")
+glue("median: {pretty(u_prior)} -> {pretty(u_posterior)} cm")
+ci_prior <- qnorm(c(0.025, 0.975), u_prior, std_dev_prior)
+ci_posterior <- qnorm(c(0.025, 0.975), u_posterior, std_dev_posterior)
+glue("95% CrI: [{pretty(ci_prior[1])} cm, {pretty(ci_prior[2])} cm] -> [{pretty(ci_posterior[1])} cm, {pretty(ci_posterior[2])} cm]")
+```
+
+Based on our data, we shifted our mean estimate from 161 cm to 164.6 cm. We now know that the true mean is probably between 153 cm and 176 cm. As we have more data to work with, our uncertainty expressed by the standard deviation has decreased, and thus our 95% CrI is narrower.
