@@ -1,0 +1,192 @@
+\documentclass[english]{beamer}
+
+%% The most common packages are already included in:
+\usetheme{biostat}
+\usepackage{xcolor}
+\usepackage{hyperref}
+
+%% Custom color for links (biostat blue)
+\definecolor{mylinkcolor}{RGB}{0,40,165}
+
+\hypersetup{
+  colorlinks=true,
+  urlcolor = mylinkcolor,
+  linkcolor=mylinkcolor,
+  urlcolor=mylinkcolor,
+  citecolor=mylinkcolor,
+  filecolor = mylinkcolor
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%% Header data: (adjust to your needs:
+\def\uzhunit{STA421 Foundations of Bayesian Methodology}             %% if (not) needed comment/uncomment
+%\def\uzhunitext{STA480}
+
+\title{History of MCMC -- Gibbs sampler}
+%% Optional Argument in [Brackets]: Short Title for Footline
+
+%% The following are all optional, simply comment them
+\subtitle{\textbf{\\ Big picture: Session 3}}
+%%\institute{STA480 Statistical consulting}  %% optional
+
+\author{Group 2: Jan Hohenheim, Holly Vuarnoz, Sophie Haldemann,
+Andrea Staub, and Emanuel Mauch}
+\date{\today}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+<<include=FALSE,purl=FALSE>>=
+library(knitr)
+opts_chunk$set(
+fig.path='figures/fig', fig.show='hold',
+	cache=TRUE, fig.height=4.5)
+@
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{document}
+% \SweaveOpts{concordance=TRUE}
+\maketitle
+
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% Idea of Gibbs sampling
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}{Idea of Gibbs sampling}
+
+\begin{itemize}
+  \item[--] MCMC technique to estimate an unknown joint distribution by sampling one variable at a time from its conditional distribution where all other variables are fixed at their current value 
+  \vspace{0.5cm}
+  %\item[--] From joint distribution, one can derive marginal densities, moments, etc.
+  \item[--] Useful when joint distribution is hard to derive or sample from directly
+  \vspace{0.5cm}
+  \item[--] Made many previously unsolvable problems solvable
+\end{itemize}
+
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% Algorithm
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}{Algorithm}
+
+\begin{enumerate}
+  \item Given unknown $f(\theta_1, \ldots, \theta_p)$ but known $f(\theta_i \mid \theta_j)$
+  \item Start iteration with arbitrary values $\theta_1^0, \ldots, \theta_p^0$
+  \item Sample \textcolor{mylinkcolor}{$\theta_1^1$} from $f(\theta_1 \mid \theta_2^0, \ldots, \theta_p^0)$ 
+  \item Sample $\theta_2^1$ from $f(\theta_2 \mid$ \textcolor{mylinkcolor}{$\theta_1^1$} $, \theta_3^0, \ldots, \theta_p^0)$ 
+  \item Continue until $\theta_p^1$ sampled from $f(\theta_p \mid \theta_1^1, \ldots, \theta_{p-1}^1)$ 
+  \item Start next iteration with values $\theta_1^1, \ldots, \theta_p^1$
+  \item Repeat over n iterations 
+  \item As $n \rightarrow \infty, \theta_1^n, \ldots, \theta_p^n$ converges to $\sim f(\theta_1, \ldots, \theta_p)$ 
+\end{enumerate}
+
+\end{frame}
+
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% Animation
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{frame}
+
+\href{https://chi-feng.github.io/mcmc-demo/app.html?algorithm=GibbsSampling&target=standard&tweeningDelay=200&delay=1000}{\textcolor{mylinkcolor}{Animation of Gibbs Sampling}}
+
+\text Feng, Chi (2016)
+
+\end{frame}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% History
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}{History}
+
+\begin{itemize}
+
+\item 1902: Josiah Willard Gibbs' work in statistical physics
+%% American scientist, Gibbs energy
+%% Albert Einstein: "The greatest mind in American history"
+%% Didn't formulate the Gibbs sampler algorithm
+%% Work in statistical mechanics, estimate state of a molecule conditional on state of neighboring molecules
+
+%% Between 1902 and 80s, when Gibbs sampling was developed:
+%% Several people like Metropolis (50s) and Hastings (70s) touched on something close to Gibbs sampling
+%% But didn't see that its potential and how it could be beneficial
+%% Didn't have enough computational power at that time
+%% Advantage of Gibbs over Metropolis-Hastings: 
+%% - don't have to sample from a multivariate joint distribution with large nr. of variables
+%% - Gibbs only focuses on one variable at a time, makes it easier
+%% - don't need to specify jump distribution
+%% - no rejection --> can be more efficient
+%% - however we need the conditional distributions (which is easy when they're conjugate)
+
+
+%% 1974: The Hammersley-Clifford theorem tells us that when we have a collection of variables with dependencies represented by a graph, the joint distribution can be expressed as a product of smaller distributions, each defined over subsets of variables that form cliques in the graph. A clique is a subset of nodes where each node is connected to every other node in the subset. Necessary and sufficient conditions for the conditional distributions to be compatible with a joint distribution
+
+\vspace{0.3cm}
+
+
+
+
+\item 1984: Geman brothers formulated Gibbs sampler in their image restoration work with Gibbs random fields
+%% 1984: Stuart and Donald Geman coined the term "Gibbs sampler" in their work on image restoration using Gibbs random fields. They assumed that the true, clean image could be modeled as a realization of a Gibbs random field, where each pixel depends on its neighboring pixels (1 pixel = 1 variable --> many variables). 
+
+\vspace{0.3cm}
+
+\item 1990: Gelfand and Smith demonstrated broad applicability of Gibbs sampler in (Bayesian) statistics
+% 1990: Gelfand and Smith: popularized the use of Gibbs sampling in (Bayesian) statistics
+% Now also outside of spatial statistics and statistical physics
+% Showed how Gibbs sampling could be used to approximate the joint posterior distribution
+% Bypassing the need for complex analytical solutions
+\vspace{0.3cm}
+
+\item 1991: BUGS (MRC Biostatistics Unit, Cambridge)
+% (Bayesian inference using Gibbs sampling)
+% BUGS provides a user-friendly interface for specifying and fitting Bayesian models using the Gibbs sampling algorithm.
+% BUGS uses its own modeling language called the BUGS language 
+% 2005: OpenBUGS
+
+\vspace{0.3cm}
+
+\item 2007: JAGS (Martyn Plummer)
+% Just another Gibbs sampler
+% JAGS was written with three aims in mind:
+% To have a cross-platform engine for the BUGS language
+% To be extensible, allowing users to write their own functions, distributions and samplers.
+% To be a platform for experimentation with ideas in Bayesian modelling
+\end{itemize}
+
+\end{frame}
+
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}
+  \begin{center}
+    Thank you!
+  \end{center}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{frame}{References}
+   \footnotesize
+   \bibliographystyle{apalike}
+
+   % Add space between bibliography items
+   \let\oldbibitem\bibitem
+   \renewcommand{\bibitem}{\vspace{5pt}\oldbibitem}
+
+   \nocite{casella1992}
+   \nocite{geman1984}
+   \nocite{robert2011}
+   \bibliography{present1}
+\end{frame}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+
+
+
+\end{document}
