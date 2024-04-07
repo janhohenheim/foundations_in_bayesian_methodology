@@ -101,20 +101,15 @@ a <- 1.6
 b <- 0.4
 
 # gamma
-gamma_pdf <- function(x, a, b) {
-  b^a * x^(a-1) * exp(-b*x) / gamma(a)
+gamma_pdf <- function(x, a, b) {b^a / gamma(a) * x^(a-1) * exp(-b*x) 
 }
 
 # inverse gamma
-IG_pdf <- function(y, a, b) {
-  b^a / gamma(a) * (1/y)^(a+1) * exp(-b/y)
-}
+IG_pdf <- function(y, a, b) b^a / gamma(a) * y^(-(a + 1)) * exp(-b / y)
+
 
 # square root gamma
-SIG_pdf <- function(z, a, b) {
-  y <- z^2
-  2 * b^a / gamma(a) * (1/y)^(a+1) * exp(-b/y) / z
-}
+SIG_pdf <- function(z, a, b) 2 * b^a / gamma(a) * z^(-(2 * a + 1)) * exp(-b / (z^2))
 
 # generate values
 x_values <- seq(0.01, 5, length = 400)
@@ -158,4 +153,6 @@ ggplot(df_filtered[df_filtered$Distribution != 'Gamma', ],
 
 
 ### Interpretation:
-Both the IG(1.6, 0.4) and SIG(1.6, 0.4) distributions assign probability 0 to values (very!) close to 0.
+- The **IG(1.6, 0.4)** distribution spikes quickly in the assignment of probabilities, showing a sharp increase in probability for small values. 
+- The **SIG(1.6, 0.4)** distribution assigns probability 0 to values (very!) close to 0, indicating a rapid decrease in probability near 0. However, this increase in probability doesn't occur until around 0.2, indicating a slower rise in probability compared to the IG distribution.
+
