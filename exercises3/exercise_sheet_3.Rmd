@@ -79,6 +79,7 @@ P[y$_{n+1}$ >200] for one future observation of Height is `r round(prob_post,3)`
 In Exercise 4 of Worksheet 2 the posterior distribution of m|$y_1, . . . ,y_n$ was derived. Whereas in this worksheet's exercise 4 the posterior distribution of $y_{n+1}|y_1, . . . , y_n$ was derived.
 The values for the mean of the posterior predictive distribution are the same (164.558). However, the standard deviations differ with much larger values for the posterior distribution of $y_{n+1}$.
 
+The mean of the prior predictive distribution is with 161 lower than the mean of the posterior predictive distribution (164.558). This shift is due to a sample mean larger than 161. The variance of the posterior predictive distribution is with `r round((1/lambda_post+1/my_kappa),3)` slightly smaller than the variance of the prior predictive distribution (`r round(stand_dev^2,3)`).
 
 ## Exercise 5: 
 Change-of-variables formula. Derivation of Inverse Gamma (IG) and Square Root Inverse Gamma (SIG) with parameters \(a = 1.6\) and \(b = 0.4\).
