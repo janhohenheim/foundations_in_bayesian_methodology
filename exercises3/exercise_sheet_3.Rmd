@@ -21,13 +21,94 @@ knitr::opts_chunk$set(echo = TRUE)
 
 ```{r, message = F}
 library(tidyverse)
-library(rjags)
+#library(rjags)
 library(coda)
 library(bayesmeta)
 library(pCalibrate)
 library(glue)
+library(ggplot2)
 ```
 
 ## Exercise 1
 
 TODO
+
+
+## Exercise 5: 
+Change-of-variables formula. Derivation of Inverse Gamma (IG) and Square Root Inverse Gamma (SIG) with parameters \(a = 1.6\) and \(b = 0.4\).
+
+
+![Change of variable formula](exercise5-1.jpg)
+
+![Inverse Gamma ](exercise5-2.jpg)
+
+![Square root Inverse Gamma](exercise5-3.jpg)
+
+
+### Plots:
+
+
+```{r, fig.show='hold'}
+# shape parameters
+a <- 1.6
+b <- 0.4
+
+# gamma
+gamma_pdf <- function(x, a, b) {
+  b^a * x^(a-1) * exp(-b*x) / gamma(a)
+}
+
+# inverse gamma
+IG_pdf <- function(y, a, b) {
+  b^a / gamma(a) * (1/y)^(a+1) * exp(-b/y)
+}
+
+# square root gamma
+SIG_pdf <- function(z, a, b) {
+  y <- z^2
+  2 * b^a / gamma(a) * (1/y)^(a+1) * exp(-b/y) / z
+}
+
+# generate values
+x_values <- seq(0.01, 5, length = 400)
+
+# data frames for plotting
+df_gamma <- data.frame(x = x_values, y = sapply(x_values, gamma_pdf, a, b), 
+                       Distribution = 'Gamma')
+df_IG <- data.frame(x = x_values, y = sapply(x_values, IG_pdf, a, b), 
+                    Distribution = 'Inverse Gamma')
+df_SIG <- data.frame(x = x_values, y = sapply(x_values, SIG_pdf, a, b), 
+                     Distribution = 'Sqrt Inverse Gamma')
+
+# combine data frames
+df <- rbind(df_gamma, df_IG, df_SIG)
+
+# plotting all 
+ggplot(df, aes(x = x, y = y, color = Distribution)) + 
+  geom_line() + 
+  theme_minimal() +
+  labs(title = 'Densities of X, Y, and Z', x = 'Value', y = 'Density') +
+  scale_color_manual(values = c('Gamma' = 'blue', 
+                                'Inverse Gamma' = 'red', 
+                                'Sqrt Inverse Gamma' = 'green'))
+
+```
+```{r, fig.show='hold'}
+
+# filter data frame for domain range between 0 and 0.5 
+df_filtered <- df[df$x <= 0.5,]
+
+# plotting Y and Z for the range 0 to 0.5
+ggplot(df_filtered[df_filtered$Distribution != 'Gamma', ], 
+       aes(x = x, y = y, color = Distribution)) + 
+  geom_line() + 
+  theme_minimal() +
+  labs(title = 'Densities of Y and Z (0 to 0.5)', x = 'Value', y = 'Density') +
+  scale_color_manual(values = c('Inverse Gamma' = 'red', 
+                                'Sqrt Inverse Gamma' = 'green'))
+
+```
+
+
+### Interpretation:
+Both the IG(1.6, 0.4) and SIG(1.6, 0.4) distributions assign probability 0 to values (very!) close to 0.
