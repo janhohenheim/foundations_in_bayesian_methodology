@@ -29,6 +29,20 @@ library(glue)
 library(ggplot2)
 ```
 
+## Exercise 3:
+
+### a)
+
+![Exercise 3 Part 1](ex3_1.png){width=60% height=60%}  
+![Exercise 3 Part 2](ex3_2.png){width=60% height=60%}  
+![Exercise 3 Part 3](ex3_3.png){width=60% height=60%}  
+
+### b)
+
+![Exercise 3 Part 4](ex3_4.png){width=60% height=60%}  
+![Exercise 3 Part 5](ex3_5.png){width=60% height=60%}  
+![Exercise 3 Part 6](ex3_6.png){width=60% height=60%}  
+
 ## Exercise 4:
 
 Apply analytical formulas derived in Exercise 3 above to the vector of height (cm) measurements 166, 168, 168, 177, 160, 170, 172, 159, 175, 164, 175, 167, 164 of 13 Swiss females.
