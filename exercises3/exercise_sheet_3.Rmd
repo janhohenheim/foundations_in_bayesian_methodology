@@ -170,3 +170,87 @@ ggplot(df_filtered[df_filtered$Distribution != 'Gamma', ],
 - The **IG(1.6, 0.4)** distribution spikes quickly in the assignment of probabilities, showing a sharp increase in probability for small values. 
 - The **SIG(1.6, 0.4)** distribution assigns probability 0 to values (very!) close to 0, indicating a rapid decrease in probability near 0. However, this increase in probability doesn't occur until around 0.2, indicating a slower rise in probability compared to the IG distribution.
 
+## Exercise 6:
+
+### a)
+```{r}
+
+library(coda)
+
+set.seed(44566)
+
+M <- 1000
+
+X <- rgamma(n = M, shape = 1.6, rate = 0.4)
+
+X <- as.mcmc(X)
+
+# Traceplot
+coda::traceplot(X)
+
+# Histogram overlayed true density
+seq <- seq(0, 20, by = 0.01)
+
+hist(X, probability = TRUE, ylim = c(0, 0.25), breaks = 100)
+lines(seq, dgamma(seq, shape = 1.6, rate = 0.4))
+abline(v = mean(X), col = "magenta")
+abline(v = median(X), col = "blue")
+
+# Sample mean and sample median
+mean(X)
+median(X)
+```
+
+
+### b)
+```{r}
+library(invgamma)
+
+Y <- 1/X
+Y <- as.mcmc(Y)
+
+# Traceplot
+coda::traceplot(Y)
+
+# Histogram overlayed true density
+hist(Y, probability = TRUE, xlim = c(0, 10), ylim = c(0, 2.5), breaks = 100)
+lines(seq, dinvgamma(seq, shape = 1.6, rate = 0.4))
+abline(v = mean(Y), col = "magenta")
+abline(v = median(Y), col = "blue")
+
+# Sample mean and sample median
+mean(Y)
+median(Y)
+```
+
+### c)
+```{r}
+Z <- sqrt(1/X)
+
+# Density of the square-root inverse gamma distribution
+sqinvgamma <- function(z, alpha, beta){
+  beta^alpha/gamma(alpha) * 2/z^(1 + 2*alpha) * exp(-beta*1/z^2)
+}
+
+
+# Traceplot
+coda::traceplot(Z)
+
+# Histogram overlayed true density
+hist(Z, probability = TRUE, xlim = c(0, 6), ylim = c(0, 2.5), breaks = 100)
+for (i in seq){
+  points(i, sqinvgamma(z = i, alpha = 1.6, beta = 0.4))
+}
+abline(v = mean(Z), col = "magenta")
+abline(v = median(Z), col = "blue")
+
+# Sample mean and sample median
+mean(Z)
+median(Z)
+```
+
+The Median of Y is 1/Median(X), and the median of Z is sqrt(1/Median(X))
+Since the median divides the probability mass of the density into to
+equally sized areas, the transformations
+can be applied to the median as well. For the mean, this does not work.
+
