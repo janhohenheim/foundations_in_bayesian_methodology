@@ -66,9 +66,9 @@ For-Loop:
 
 2.	A new proposal for the intercept (alpha*) is sampled from the proposal distribution, which is a univariate normal distribution centered around the current alpha with a pre-defined standard deviation.
 
-3.	The inverse-logit function transforms $\alpha^* + \beta x$ into probability of death on a scale from 0 to 1. X is a vector of dosages so it returns a vector of p's. The p's are then passed as parameters to the binomial distribution function to calculate the log-likelihood of the observed proportions of dead mice given their corresponding p. The log-likelihood is then added to the log(prior) function of $\alpha^*$, which follows a normal distribution with mean 0 and an assumed standard deviation. The sum of the log-likelihood and the log-prior is proportionate to the log-posterior.
+3.	The inverse-logit function transforms $\alpha^* + \beta x$ into probability of death on a scale from 0 to 1. X is a vector of dosages so it returns a vector of p's. The p's are then passed as parameters to the binomial distribution function to calculate the log-likelihood of the observed proportions of dead mice given their corresponding p. The log-likelihood is then added to the log of the prior of $\alpha^*$, which follows a normal distribution with mean 0 and an assumed standard deviation. The sum of the log-likelihood and the log-prior is proportionate to the log-posterior.
 
-4.	The same is done again but this time with the current alpha value, instead of the proposed alpha.
+4.	The same is done again but this time with the current/old alpha value, instead of the proposed alpha.
 
 5.	IF the difference between the two posteriors is larger than a random value sampled from a standard uniform distribution, the proposed alpha gets accepted and is now considered the current alpha, and the counter of the number of accepted alphas is raised by 1.
 
