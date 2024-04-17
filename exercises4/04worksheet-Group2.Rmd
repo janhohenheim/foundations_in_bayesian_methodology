@@ -263,7 +263,7 @@ MCMC_1_result <- MCMC_MH(s_alpha[1], s_beta[1])
 ```
 
 
-The tuning parameters are the SDs of the proposal distributions for alpha and beta. With small tuning parameters, the proposal values are likely to be very close to the previous alpha and beta values, the exploration of the parameter space is done in small steps, so there is high autocorrelation and cross-correlation for many lags. The sampler doesn't take any "big risks" and so the acceptance rate is very high, but it doesn't explore the parameter space well.
+The tuning parameters are the SDs of the proposal distributions for alpha and beta. With small tuning parameters, the proposal distributions are narrow. The new alpha and beta values are likely to be very close to the previous alpha and beta values, the exploration of the parameter space is done in small steps, so there is high autocorrelation and cross-correlation over many lags. The sampler doesn't take any "big risks" and so the acceptance rate is very high, but it doesn't explore the parameter space well. Also it can drift off and then it takes a lot of iterations to get back again to the region of high posterior density.
 
 \newpage
 
@@ -275,7 +275,8 @@ Results for medium tuning parameters (1, 100):
 MCMC_2_result <- MCMC_MH(s_alpha[2], s_beta[2])
 ```
 
-The autocorrelation and cross-corrrelation quickly decay to zero. With optimal SDs for the proposal distributions, the sampler achieves a good balance between exploration of the parameter space and acceptance rate. The traceplot is stationary.
+The autocorrelation and cross-corrrelation quickly decay to zero. With optimal SDs for the proposal distributions, the sampler achieves a good balance between exploration of the parameter space and acceptance rate. The traceplot is stationary. It moves rapidly across the whole parameter space, without getting stuck, leading to the characteristic caterpillar shape. 
+
 
 \newpage
 
@@ -289,7 +290,7 @@ MCMC_3_result <- MCMC_MH(s_alpha[3], s_beta[3])
 
 ```
 
-When the SDs of the proposal distributions are too large, the sampler likely proposes values far outside in the parameter space, leading to "adventurous" exploration and low acceptance rates. The chain is often stuck at the same value over several iterations, leading to these skyline-like traceplots with constant values over several iterations, and sporadic jumps. The ACF shows high autocorrelation over many lags because the chain is often stuck at the same value. There is also high cross-correlation over many lags because if one parameter is "off", it leads to low likelihood and thus rejection of the sample, even if the other parameter would have been reasonable.
+Here the SDs of the proposal distributions are too large, so the sampler often proposes values far outside in the parameter space, leading to "adventurous" exploration and low acceptance rates. Due to low acceptance rates, the chain is often stuck at the same value over several iterations, leading to these skyline-like traceplots with constant values over several iterations, and sporadic jumps, and high autocorrelation over many lags. There is also high cross-correlation over many lags because if one parameter is "off", it leads to low likelihood and thus rejection of the sample, even if the other parameter would have been reasonable.
  
 \newpage
 
@@ -352,7 +353,7 @@ median_beta <- median(betas_2)
 curve( mypi(median_alpha, median_beta, x), from = -0.015, to = 0.04, ylim = c(0,1),
        xlab = "Dosage of anti-pneumococcus serum", 
        ylab = "probability of death, p", xaxt = 'n', col = "darkblue", lwd = 2,
-       main = "Higher dosages reducing probability of death" )
+       main = "Higher dosages reduce probability of death" )
 # Converting the dosages back to the uncentered, original values
 breaks <- seq(-0.015, 0.04, by = 0.01)  
 axis(1, at = breaks, labels = as.character(round(breaks + mean(x_original), 2)) )
@@ -368,7 +369,7 @@ legend("topright",
 
 \bigskip
 
-The modelled logistic curve is a good fit for the data, but it might slightly underestimate p for very low dosages. Higher dosages lead to lower probability of death, which is reflected in the negative beta value, and p is basically zero for dosages higher than 0.045. Of course, if the dosage would be too high, this might again be fatal.
+The modelled logistic curve is a good fit for the data, but it might slightly underestimate p for very low dosages. High dosages lead to lower probability of death, which is reflected in the negative beta value, and p is basically zero for dosages higher than 0.045. Of course, if the dosage would be extremely high, this might again be fatal, but this was not modelled here.
 
 
 
