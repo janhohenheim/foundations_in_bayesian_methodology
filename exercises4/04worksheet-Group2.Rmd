@@ -135,6 +135,7 @@ mypi <- function(alpha, beta, x){
 }
 
 
+    
 ## Step 1: R: (univariate proposal) Metropolis MCMC settings 
 
 # number of MCMC iterations
@@ -180,7 +181,11 @@ MCMC_MH <- function(s_alpha, s_beta){
     if(log(runif(1)) <= logacc){
       # accept the proposed value
       alpha <- alpha_star
-      alpha_yes <- alpha_yes + 1
+      
+      if(i > 0){ # count only after burnin-period
+        alpha_yes <- alpha_yes + 1
+      }
+      
     }
     
     ## update beta
@@ -196,7 +201,11 @@ MCMC_MH <- function(s_alpha, s_beta){
     if(log(runif(1)) <= logacc){
       # accept the proposed value
       beta <- beta_star
-      beta_yes <- beta_yes + 1
+      
+      if(i > 0){ # count only after burnin-period
+        beta_yes <- beta_yes + 1
+      }
+      
     }
     
     # after the burnin save every kth sample
@@ -204,10 +213,10 @@ MCMC_MH <- function(s_alpha, s_beta){
       alpha_samples <- c(alpha_samples, alpha)
       beta_samples <- c(beta_samples, beta)
     }
-    if(i%%1000 ==0){
+    #if(i%%1000 ==0){
       # print the acceptance rates on the fly
       # cat(c(i, alpha_yes/count, beta_yes/count), "\n")
-    }
+    #}
   }
   
   
@@ -216,8 +225,8 @@ MCMC_MH <- function(s_alpha, s_beta){
   # Traceplots
   print(glue("Traceplots:\n"))
   par(mfrow = c(1,2),mar = c(8, 5, 8, 1))
-  plot(alpha_samples, type = "l", ylab = "Alpha")
-  plot(beta_samples, type = "l", ylab = "Beta")
+  plot(alpha_samples, type = "l", ylab = "Alpha", xlab = "Iteration")
+  plot(beta_samples, type = "l", ylab = "Beta", xlab = "Iteration")
   
   # Autocorrelation plots
   print(glue("Autocorrelation and Cross-Correlation:"))
@@ -229,11 +238,13 @@ MCMC_MH <- function(s_alpha, s_beta){
   ccf(alpha_samples, beta_samples, ylab = "Cross Correlation", main = "")
   
   # Acceptance Rates
-  print(glue("Acceptance rate alpha: {formatC(alpha_yes/count, 3)} "))
-  print(glue("Acceptance rate beta: {formatC(beta_yes/count, 3)} "))
+  acceptance_alpha <- alpha_yes/length(alpha_samples)
+  acceptance_beta <- beta_yes/length(beta_samples)
+  print(glue("Acceptance rate alpha: {formatC( acceptance_alpha , 3)} "))
+  print(glue("Acceptance rate beta: {formatC( acceptance_beta , 3)} "))
 
   # Return MCMC and acceptance rate for alpha and beta
-  return( list(alpha_samples, beta_samples, alpha_yes/count, beta_yes/count) )
+  return( list(alpha_samples, beta_samples, acceptance_alpha, acceptance_beta ) )
 }
 ```
 
@@ -301,8 +312,8 @@ Under which condition the optimal acceptance rate of about 0.2-0.4 ("rule of thu
 \hrulefill
 
 With medium tuning parameters (1, 100), the acceptance rates are optimal:  
-Acceptance rate alpha: 0.217  
-Acceptance rate beta: 0.2316  
+Acceptance rate alpha: `r MCMC_2_result[3]`
+Acceptance rate beta: `r MCMC_2_result[4]`  
 
 \bigskip
 \bigskip
