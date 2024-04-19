@@ -62,23 +62,23 @@ Preparation:
 
 For-Loop:
 
-1.	At the beginning of each loop, the counter is updated by 1.
+1.	At the beginning of each loop, the counter is updated by 1 (however it's not really needed)
 
-2.	A new proposal for the intercept (alpha*) is sampled from the proposal distribution, which is a univariate normal distribution centered around the current alpha with a pre-defined standard deviation.
+2.	A new proposal for alpha is sampled from the proposal distribution, which is a univariate normal distribution centered around the current alpha with a pre-defined standard deviation (tuning parameter).
 
-3.	The inverse-logit function transforms $\alpha^* + \beta x$ into probability of death on a scale from 0 to 1. X is a vector of dosages so it returns a vector of p's. The p's are then passed as parameters to the binomial distribution function to calculate the log-likelihood of the observed proportions of dead mice given their corresponding p. The log-likelihood is then added to the log of the prior of $\alpha^*$, which follows a normal distribution with mean 0 and an assumed standard deviation. The sum of the log-likelihood and the log-prior is proportionate to the log-posterior.
+3.	The inverse-logit function transforms $\alpha^* + \beta x$ into probability of death pi on a scale from 0 to 1. X is a vector of dosages so it returns a vector of pi's. The pi's are then passed as parameters to the binomial distribution function to calculate the log-likelihood of the observed proportions of dead mice given the corresponding pi. The log-likelihood is then added to the log of the prior density for the current alpha* value. The prior follows a normal distribution with mean 0 and an assumed standard deviation. The sum of the log-likelihood and the log-prior is proportionate to the log-posterior.
 
-4.	The same is done again but this time with the current/old alpha value, instead of the proposed alpha.
+4.	Step 3 is done again but this time with the current/old alpha value, instead of the proposed alpha.
 
-5.	IF the difference between the two posteriors is larger than a random value sampled from a standard uniform distribution, the proposed alpha gets accepted and is now considered the current alpha, and the counter of the number of accepted alphas is raised by 1.
+5.	IF the difference of the new log-posterior minus the old log-posterior is larger than a random value sampled from a standard uniform distribution, the new proposed alpha gets accepted and is now considered the current alpha. If not, the current alpha stays the same.
 
-6.	Steps 2-5 are now repeated for the beta parameter 
+6.	Only if burn-in period is finished, i.e. if i $\geqslant$ 1 (otherwise this step is skipped): the acceptance counter alpha_yes is raised by 1 if the proposed alpha was accepted in the previous step. 
 
-7.	As long as the counter is still $\leqslant$ 0 (burn-in period), steps 1-6 are repeated. 
+7.	Still within the same iteration, steps 2-6 are now repeated but for the beta parameter (slope)
 
-8.	At i = 1, the actual iterations begin, and the current alpha value is added to the vector of alpha samples, regardless of whether it's a newly accepted proposal or the same as in the previous iteration. If the thinning parameter t is $\neq$ 1, only every t'th sample is stored in the vector.
+8.	Only if burn-in period is finished, i.e. if i $\geqslant$ 1 (otherwise this step is skipped): the alpha and beta samples are stored in their corresponding vector. They are stored whether the values got accepted or not. If the thinning parameter k is $\neq$ 1, only every k'th sample is stored in the vector. 
 
-9.	Every 1000th count, the acceptance rates are printed, i.e. the number of accepted alphas and betas divided by the number of counts.
+9.	Only if burn-in period is finished, i.e. if i $\geqslant$ 1 (otherwise this step is skipped): the acceptance rates are printed for every 1000th iteration, to keep track of the algorithm. The acceptance rate is the number of accepted alphas resp. betas divided by the number of iterations (excluding the burn-in period).
 
 
 
@@ -109,23 +109,17 @@ mypi <- function(alpha, beta, x){
 ## Two independent normal proposals
 
 # the covariate values (dose)
-# x_original <- c(0.0028, 0.0056, 0.0112, 0.0225, 0.0450)
 x_original <- c(0.0028, 0.0028, 0.0056, 0.0112, 0.0225, 0.0450)
 # the centered covariate values
 x <- x_original - mean(x_original)
 # number of mice deaths
-# y <- c(35, 21, 9, 6, 1)
 y <- c(26, 9, 21, 9, 6, 1)
 # total number of mice
-# n <- c(40, 40, 40, 40, 40)
 n <- c(28, 12, 40, 40, 40, 40)
 
 # Assumption
 # variance of normal priors
 sigma2 <- 10^(4)
-
-
-## Bayesian analysis
 
 # inverse logit: logit^(-1)(alpha + beta*x)
 mypi <- function(alpha, beta, x){
@@ -134,8 +128,6 @@ mypi <- function(alpha, beta, x){
   return(pi)
 }
 
-
-    
 ## Step 1: R: (univariate proposal) Metropolis MCMC settings 
 
 # number of MCMC iterations
@@ -146,8 +138,9 @@ n.burnin <- 4000
 n.thin <- 1
 #n.thin <- floor((n.iter-n.burnin)/500)
 
+## Putting everything into a function to then call it for tuning parameters
 ## univariate random walk proposals ##
-MCMC_MH <- function(s_alpha, s_beta){
+MCMC_MH <- function(s_alpha, s_beta){ # Input: SD's of proposal distributions
   
   set.seed(44566)
   alpha_samples <- c()
@@ -182,10 +175,9 @@ MCMC_MH <- function(s_alpha, s_beta){
       # accept the proposed value
       alpha <- alpha_star
       
-      if(i > 0){ # count only after burnin-period
+      if(i > 0){ # count proposed value only after burnin-period
         alpha_yes <- alpha_yes + 1
       }
-      
     }
     
     ## update beta
@@ -201,11 +193,10 @@ MCMC_MH <- function(s_alpha, s_beta){
     if(log(runif(1)) <= logacc){
       # accept the proposed value
       beta <- beta_star
-      
-      if(i > 0){ # count only after burnin-period
+   
+      if(i > 0){ # count proposed value only after burnin-period
         beta_yes <- beta_yes + 1
       }
-      
     }
     
     # after the burnin save every kth sample
@@ -213,9 +204,9 @@ MCMC_MH <- function(s_alpha, s_beta){
       alpha_samples <- c(alpha_samples, alpha)
       beta_samples <- c(beta_samples, beta)
     }
-    #if(i%%1000 ==0){
+    #if(i%%1000 ==0){ # skipping this
       # print the acceptance rates on the fly
-      # cat(c(i, alpha_yes/count, beta_yes/count), "\n")
+      # cat(c(i, alpha_yes/i, beta_yes/i), "\n")
     #}
   }
   
@@ -240,8 +231,8 @@ MCMC_MH <- function(s_alpha, s_beta){
   # Acceptance Rates
   acceptance_alpha <- alpha_yes/length(alpha_samples)
   acceptance_beta <- beta_yes/length(beta_samples)
-  print(glue("Acceptance rate alpha: {formatC( acceptance_alpha , 3)} "))
-  print(glue("Acceptance rate beta: {formatC( acceptance_beta , 3)} "))
+  print(glue("Acceptance rate alpha: {acceptance_alpha} "))
+  print(glue("Acceptance rate beta: {acceptance_beta} "))
 
   # Return MCMC and acceptance rate for alpha and beta
   return( list(alpha_samples, beta_samples, acceptance_alpha, acceptance_beta ) )
@@ -274,7 +265,7 @@ MCMC_1_result <- MCMC_MH(s_alpha[1], s_beta[1])
 ```
 
 
-The tuning parameters are the SDs of the proposal distributions for alpha and beta. With small tuning parameters, the proposal distributions are narrow. The new alpha and beta values are likely to be very close to the previous alpha and beta values, the exploration of the parameter space is done in small steps, so there is high autocorrelation and cross-correlation over many lags. The sampler doesn't take any "big risks" and so the acceptance rate is very high, but it doesn't explore the parameter space well. Also it can drift off and then it takes a lot of iterations to get back again to the region of high posterior density.
+The tuning parameters are the SDs of the proposal distributions for alpha and beta. With small tuning parameters, the proposal distributions are narrow. The new alpha and beta values are likely to be very close to the previous alpha and beta values, the exploration of the parameter space is done in small steps, so there is high autocorrelation and cross-correlation over many lags. The sampler doesn't take any "big risks" and so the acceptance rate is very high, but it doesn't explore the parameter space well. Also it can drift off and then it takes a lot of iterations to get back again to the region of high posterior density. It's not stationary.
 
 \newpage
 
@@ -286,7 +277,7 @@ Results for medium tuning parameters (1, 100):
 MCMC_2_result <- MCMC_MH(s_alpha[2], s_beta[2])
 ```
 
-The autocorrelation and cross-corrrelation quickly decay to zero. With optimal SDs for the proposal distributions, the sampler achieves a good balance between exploration of the parameter space and acceptance rate. The traceplot is stationary. It moves rapidly across the whole parameter space, without getting stuck, leading to the characteristic caterpillar shape. 
+With optimal SDs for the proposal distributions, the sampler has a good balance between exploration of the parameter space and acceptance rate. The traceplot is stationary. The sampler moves rapidly across the whole parameter space without getting stuck, leading to the characteristic caterpillar shape, and autocorrelation and cross-correlation quickly decaying to zero. 
 
 
 \newpage
@@ -301,7 +292,8 @@ MCMC_3_result <- MCMC_MH(s_alpha[3], s_beta[3])
 
 ```
 
-Here the SDs of the proposal distributions are too large, so the sampler often proposes values far outside in the parameter space, leading to "adventurous" exploration and low acceptance rates. Due to low acceptance rates, the chain is often stuck at the same value over several iterations, leading to these skyline-like traceplots with constant values over several iterations, and sporadic jumps, and high autocorrelation over many lags. There is also high cross-correlation over many lags because if one parameter is "off", it leads to low likelihood and thus rejection of the sample, even if the other parameter would have been reasonable.
+Here the SDs of the proposal distributions are large, leading to "adventurous" exploration, so the sampler often proposes parameter values far outside in the parameter space, under which the data is unlikely, leading to low acceptance rates. Due to low acceptance rates, the chain is often stuck at the same value over several iterations, leading to these skyline-like traceplots with constant values over several iterations and thus high autocorrelation over many lags. Only sporadically there's a big jump when the sampler proposes a value that is accepted by chance. There is also high cross-correlation over many lags because the samples stay constant over many iterations. 
+
  
 \newpage
 
