@@ -361,9 +361,7 @@ curve( mypi(median_alpha, median_beta, x), from = -0.015, to = 0.04, ylim = c(0,
 breaks <- seq(-0.015, 0.04, by = 0.01)  
 axis(1, at = breaks, labels = as.character(round(breaks + mean(x_original), 2)) )
 points(x, y/n, pch = 19, col = "tomato")
-legend("topright", 
-       legend = c( paste0("Fitted logistic curve with\nalpha = ", round(median_alpha, 2),
-                          ", beta = ", round(median_beta,2) ), "Original data"), 
+legend("topright", legend = c( "Fit", "Original data"), 
        bty = "n", col = c("darkblue", "tomato"), lty = c(1,NA), pch = c(NA,19), lwd = c(2,NA) )
 
 
@@ -372,7 +370,7 @@ legend("topright",
 
 \bigskip
 
-The modelled logistic curve is a good fit for the data, but it might slightly underestimate p for very low dosages. High dosages lead to lower probability of death, which is reflected in the negative beta value, and p is basically zero for dosages higher than 0.045. Of course, if the dosage would be extremely high, this might again be fatal, but this was not modelled here.
+The modelled logistic curve is a good fit for the data, but it might slightly underestimate p for very low dosages. High dosages lead to lower probability of death, which is reflected in the negative beta value, and p is basically zero for dosages higher than 0.045. Of course, if the dosage would be extremely high, this might again be fatal, but this was not modelled here. 
 
 
 
