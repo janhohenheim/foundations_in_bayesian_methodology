@@ -48,15 +48,17 @@ Explain step by step in your own words what the code in 04MHSampler.R is doing.
 
 Preparation:
 
--	Store the dosage values, centered dosage values, number of deaths, and total number of mice in vectors
+-	Cleaning the environment; storing the dosage values, centered dosage values, number of deaths, and total number of mice in vectors
 
--	Creating a function that takes the intercept and slope ($\alpha$ and $\beta$) and x (dosage) as input and returns the inverse logit function of $\alpha + \beta x$, i.e. it projects it onto a logistic scale between 0 and 1 to return the corresponding p, which is the probability of death.
+- Defining the variance for the normal priors
 
--	Defining number of iterations; burn-in length; thinning parameter; and standard deviations for the normal proposals
+-	Creating a function that takes the intercept and slope ($\alpha$ and $\beta$) and x (dosage) as input and returns the inverse logit function of the log-odds $\alpha + \beta x$, i.e. it projects it onto a scale between 0 and 1 and returns the corresponding p, which is the probability of death.
 
--	Preparing empty vectors to store the sampled alpha and betas; a variable to record the number of accepted proposals; initial start values for alpha and beta; and a counter that will track the counts of the for-loop
+-	Setting a seed, defining the number of iterations; burn-in length; and thinning parameter
 
--	The for-loop is set up to go from –burninlength to the number of desired iterations
+-	Preparing two empty vectors to store the sampled alpha and betas; two vectors with 0's of the length number of iterations times thinning parameter, to record whether the proposals were accepted (1) or not (0); initial start values for alpha and beta; the standard deviations for the proposal distributions of alpha and beta (tuning parameters); and a counter that will track the counts of the for-loop
+
+-	The for-loop is set up to go from –burninlength to the number of desired iterations times the thinning parameter
 
 \bigskip
 
@@ -64,19 +66,19 @@ For-Loop:
 
 1.	At the beginning of each loop, the counter is updated by 1 (however it's not really needed)
 
-2.	A new proposal for alpha is sampled from the proposal distribution, which is a univariate normal distribution centered around the current alpha with a pre-defined standard deviation (tuning parameter).
+2.	A new proposal for alpha (alpha*) is sampled from the proposal distribution, which is a univariate normal distribution centered around the current alpha with a pre-defined standard deviation (tuning parameter).
 
-3.	The inverse-logit function transforms $\alpha^* + \beta x$ into probability of death pi on a scale from 0 to 1. X is a vector of dosages so it returns a vector of pi's. The pi's are then passed as parameters to the binomial distribution function to calculate the log-likelihood of the observed proportions of dead mice given the corresponding pi. The log-likelihood is then added to the log of the prior density for the current alpha* value. The prior follows a normal distribution with mean 0 and an assumed standard deviation. The sum of the log-likelihood and the log-prior is proportionate to the log-posterior.
+3.	The inverse-logit function transforms $\alpha^* + \beta x$ into probability of death pi on a scale from 0 to 1. X is a vector of dosages so it returns a vector of pi's. The pi's are then passed as parameters to the binomial distribution function to calculate the log-likelihood of the observed proportions of dead mice given the corresponding pi. The log-likelihood is then added to the log of the prior density for alpha*. The prior follows a normal distribution with mean 0 and an assumed variance. The sum of the log-likelihood and the log-prior is proportionate to the log-posterior.
 
-4.	Step 3 is done again but this time with the current/old alpha value, instead of the proposed alpha.
+4.	Step 3 is done again but this time with the current/old alpha value, instead of alpha*.
 
-5.	IF the difference of the new log-posterior minus the old log-posterior is larger than a random value sampled from a standard uniform distribution, the new proposed alpha gets accepted and is now considered the current alpha. If not, the current alpha stays the same.
+5.	IF the difference of the log-posterior for alpha* minus the log-posterior for the old alpha is larger than a random value sampled from a standard uniform distribution, alpha* gets accepted and is now considered the current alpha. If not, the current alpha keeps its value.
 
-6.	Only if burn-in period is finished, i.e. if i $\geqslant$ 1 (otherwise this step is skipped): the acceptance counter alpha_yes is raised by 1 if the proposed alpha was accepted in the previous step. 
+6.	Only if burn-in period is finished, i.e. if i $\geqslant$ 1 (otherwise this step is skipped): the current element in the acceptance vector for alpha is changed to 1 if the proposed alpha* was accepted, otherwise it keeps the default value 0.
 
 7.	Still within the same iteration, steps 2-6 are now repeated but for the beta parameter (slope)
 
-8.	Only if burn-in period is finished, i.e. if i $\geqslant$ 1 (otherwise this step is skipped): the alpha and beta samples are stored in their corresponding vector. They are stored whether the values got accepted or not. If the thinning parameter k is $\neq$ 1, only every k'th sample is stored in the vector. 
+8.	Only if burn-in period is finished, i.e. if i $\geqslant$ 1 (otherwise this step is skipped): the current alpha and beta samples are stored in their corresponding vector. They are stored whether the values got accepted or not. If the thinning parameter k is $\neq$ 1, only every k'th sample is stored in the vector. 
 
 9.	Only if burn-in period is finished, i.e. if i $\geqslant$ 1 (otherwise this step is skipped): the acceptance rates are printed for every 1000th iteration, to keep track of the algorithm. The acceptance rate is the number of accepted alphas resp. betas divided by the number of iterations (excluding the burn-in period).
 
@@ -95,16 +97,6 @@ Comment on the differences in traceplots, auto-correlations (acf()) and cross-co
 
 rm(list=ls())
 
-# inverse logit: logit^(-1)(alpha + beta*x)
-mypi <- function(alpha, beta, x){
-  tmp <- exp(alpha + beta*x)
-  pi <- tmp/(1+tmp)
-  return(pi)
-}
-```
-
-
-```{r}
 ## Metropolis-Hastings for logistic model
 ## Two independent normal proposals
 
@@ -146,8 +138,8 @@ MCMC_MH <- function(s_alpha, s_beta){ # Input: SD's of proposal distributions
   alpha_samples <- c()
   beta_samples <- c()
   # number of accepted proposals
-  alpha_yes <- 0
-  beta_yes <- 0
+  alpha_yes <- rep.int(0, times = n.thin*n.iter)
+  beta_yes <- rep.int(0, times = n.thin*n.iter)
   
   # starting values
   alpha <- 0
@@ -174,9 +166,8 @@ MCMC_MH <- function(s_alpha, s_beta){ # Input: SD's of proposal distributions
     if(log(runif(1)) <= logacc){
       # accept the proposed value
       alpha <- alpha_star
-      
-      if(i > 0){ # count proposed value only after burnin-period
-        alpha_yes <- alpha_yes + 1
+      if (i > 0){
+        alpha_yes[i] <- 1
       }
     }
     
@@ -193,9 +184,8 @@ MCMC_MH <- function(s_alpha, s_beta){ # Input: SD's of proposal distributions
     if(log(runif(1)) <= logacc){
       # accept the proposed value
       beta <- beta_star
-   
-      if(i > 0){ # count proposed value only after burnin-period
-        beta_yes <- beta_yes + 1
+      if (i > 0){
+        beta_yes[i] <- 1
       }
     }
     
@@ -204,15 +194,15 @@ MCMC_MH <- function(s_alpha, s_beta){ # Input: SD's of proposal distributions
       alpha_samples <- c(alpha_samples, alpha)
       beta_samples <- c(beta_samples, beta)
     }
-    #if(i%%1000 ==0){ # skipping this
+    # if((i > 0) && i%%1000 ==0){ ### skipping this
       # print the acceptance rates on the fly
-      # cat(c(i, alpha_yes/i, beta_yes/i), "\n")
-    #}
+      # cat(c(i, sum(alpha_yes)/i, sum(beta_yes)/i), "\n")
+      #}
   }
   
   
-## Plot results:
-  
+  ## Plot results:
+    
   # Traceplots
   print(glue("Traceplots:\n"))
   par(mfrow = c(1,2),mar = c(8, 5, 8, 1))
@@ -229,13 +219,14 @@ MCMC_MH <- function(s_alpha, s_beta){ # Input: SD's of proposal distributions
   ccf(alpha_samples, beta_samples, ylab = "Cross Correlation", main = "")
   
   # Acceptance Rates
-  acceptance_alpha <- alpha_yes/length(alpha_samples)
-  acceptance_beta <- beta_yes/length(beta_samples)
+  acceptance_alpha <- sum(alpha_yes)/(n.iter*n.thin)
+  acceptance_beta <- sum(beta_yes)/(n.iter*n.thin)
   print(glue("Acceptance rate alpha: {acceptance_alpha} "))
   print(glue("Acceptance rate beta: {acceptance_beta} "))
-
+  
   # Return MCMC and acceptance rate for alpha and beta
   return( list(alpha_samples, beta_samples, acceptance_alpha, acceptance_beta ) )
+
 }
 ```
 
@@ -322,8 +313,8 @@ Provide summaries (mean, sd, 0.025, 0.5, 0.975 quantiles) of the marginal poster
 
 alphas_2 <- unlist(MCMC_2_result[1])
 
-glue("Mean alpha: {formatC(mean(alphas_2), 3)} ")
-glue("SD alpha: {formatC(sd(alphas_2), 3)} ")
+glue("Mean alpha: {formatC(mean(alphas_2), 5)} ")
+glue("SD alpha: {formatC(sd(alphas_2), 5)} ")
 glue("Quantiles:")
 quantile(alphas_2, c(0.025, 0.5, 0.975) ) 
 ```
@@ -333,8 +324,8 @@ quantile(alphas_2, c(0.025, 0.5, 0.975) )
 ```{r, results = "hold"}
 betas_2 <- unlist(MCMC_2_result[2])
 
-glue("Mean beta: {formatC(mean(betas_2), 3)} ")
-glue("SD beta: {formatC(sd(betas_2), 3)} ")
+glue("Mean beta: {formatC(mean(betas_2), 5)} ")
+glue("SD beta: {formatC(sd(betas_2), 5)} ")
 glue("Quantiles:")
 quantile(betas_2, c(0.025, 0.5, 0.975) ) 
 ```
