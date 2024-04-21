@@ -366,7 +366,7 @@ legend("topright", legend = c( "Fit", "Original data"),
 
 \bigskip
 
-The resulting median beta is `r round(median_beta,3)` and median alpha is `r round(median_alpha,3)`.The modelled logistic curve is a good fit for the data, but it might slightly underestimate p for very low dosages. High dosages lead to lower probability of death, which is reflected in the negative beta value, and p is basically zero for dosages higher than 0.045. Of course, if the dosage would be too high, this might again be fatal, but this was not modelled here. For 1 unit increase in dosage x, the odds of death change by a factor of $exp(\beta)$, but since 1 unit is not really the scale that we're interested in, we could say that for an increase in dosage by 0.01, the odds of death change by a factor of $exp(\beta * 0.01) =$ `r exp(median_beta * 0.01)`.
+The resulting median beta is `r round(median_beta,3)` and median alpha is `r round(median_alpha,3)`.The modelled logistic curve is a good fit for the data, but it might slightly underestimate p for very low dosages. High dosages lead to lower probability of death, which is reflected in the negative beta value, and p is basically zero for dosages higher than 0.045. Of course, if the dosage would be too high, this might again be fatal, but this was not modelled here. For 1 unit increase in dosage x, the odds of death change by a factor of $exp(\beta)$, but since 1 unit is not really the scale that we're interested in, we could say that for an increase in dosage by 0.01, the odds of death change by a factor of $exp(\beta * 0.01) =$ `r round(exp(median_beta * 0.01),3)`.
 
 
 
