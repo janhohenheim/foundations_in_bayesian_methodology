@@ -56,9 +56,9 @@ Preparation:
 
 -	Setting a seed, defining the number of iterations; burn-in length; and thinning parameter
 
--	Preparing two empty vectors to store the sampled alpha and betas; two vectors with 0's of the length number of iterations times thinning parameter, to record whether the proposals were accepted (1) or not (0); initial start values for alpha and beta; the standard deviations for the proposal distributions of alpha and beta (tuning parameters); and a counter that will track the counts of the for-loop
+-	Preparing two empty vectors to store the sampled alpha and betas; two vectors with 0's of the length "number of iterations times thinning parameter", to record whether the proposals were accepted (1) or not (0); initial start values for alpha and beta; the standard deviations for the proposal distributions of alpha and beta (tuning parameters); and a counter that will track the counts of the for-loop
 
--	The for-loop is set up to go from –burninlength to the number of desired iterations times the thinning parameter
+-	The for-loop is set up to go from –burninlength (negative) to the number of desired iterations times the thinning parameter. The current loop number is called i.
 
 \bigskip
 
@@ -80,7 +80,7 @@ For-Loop:
 
 8.	Only if burn-in period is finished, i.e. if i $\geqslant$ 1 (otherwise this step is skipped): the current alpha and beta samples are stored in their corresponding vector. They are stored whether the values got accepted or not. If the thinning parameter k is $\neq$ 1, only every k'th sample is stored in the vector. 
 
-9.	Only if burn-in period is finished, i.e. if i $\geqslant$ 1 (otherwise this step is skipped): the acceptance rates are printed for every 1000th iteration, to keep track of the algorithm. The acceptance rate is the number of accepted alphas resp. betas divided by the number of iterations (excluding the burn-in period).
+9.	Only if burn-in period is finished, i.e. if i $\geqslant$ 1 (otherwise this step is skipped): the acceptance rates are printed for every 1000th iteration, to keep track of the algorithm. The acceptance rate is the current number of accepted alphas resp. betas post-burn-in-period divided by the current nr. of iterations i.
 
 
 
