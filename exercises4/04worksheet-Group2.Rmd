@@ -24,16 +24,265 @@ library(coda)
 library(bayesmeta)
 library(pCalibrate)
 library(glue)
+library(INLA)
+library(latex2exp)
 ```
 
 ## Exercise 2
 
-TODO
+### a)
+
+See figure below
+
+```{r pressure, echo=FALSE, fig.cap="Exercise 2 a", out.width = '100%'}
+knitr::include_graphics("ex2.png")
+```
+
+### b)
+
+#### 1)
+
+The following code is taken from the provided `04GibbsSampler2.r`:
+```{r}
+set.seed(44566)
+mu <- 4
+sigma2 <- 16
+n <- 30
+y <- rnorm(n=n, mean=mu, sd=sqrt(sigma2))
+```
+
+#### 2)
+
+The following code is taken from the provided `04GibbsSampler2.r`:
+```{r, results = "hold"}
+mu0 <- -3
+sigma2_0 <- 4
+a0 <- 1.6
+b0 <- 0.4
+
+n.iter <- 10000
+n.burnin <- 4000
+n.thin <- 1
+#n.thin <- floor((n.iter-n.burnin)/500)
+n.chains <- 1
+parameters <- c("mu", "sigma2", "inv_sigma2")
+n.parameters <- length(parameters)
+
+n.tot <- n.burnin + n.iter*n.thin
+
+gibbs_samples <- matrix(NA, nrow = n.iter, ncol = n.parameters)
+colnames(gibbs_samples) <- parameters
+
+mu.sim <- rep(NA, length = n.tot)
+sigma2.sim <- rep(NA, length = n.tot)
+inv.sigma2.sim <- rep(NA, length = n.tot)
+
+#Set the initial value
+sigma2.sim[1] <- 1/runif(n.chains)
+
+# set the counter
+k <- 1
+
+#Run the for loop (only one chain)
+for(i in 2:(n.burnin+n.iter*n.thin)){
+
+  mu.sim[i] <- rnorm(1,
+                     mean = (sum(y)/sigma2.sim[i-1] + mu0/sigma2_0) /
+                       (n/sigma2.sim[i-1] + 1/sigma2_0),
+                     sd = sqrt(1/(n/sigma2.sim[i-1] + 1/sigma2_0)))
+
+  sigma2.sim[i] <- 1/rgamma(1, shape = n/2 + a0,
+                            scale = 1 / (sum((y-mu.sim[i])^2)/2 + b0))
+
+  inv.sigma2.sim[i] <- 1/sigma2.sim[i]
+
+  # after the burnin save every n.thin'th sample
+  if((i > n.burnin) && (i%%n.thin == 0)){
+    gibbs_samples[k,] <- c(mu.sim[i], sigma2.sim[i], inv.sigma2.sim[i])
+    k <- k + 1
+  }
+
+  if(i%%1000 == 0){
+    # report on the fly in which iteration the chain is
+    cat(i, "\n")
+  }
+}
+# n.iter samples after n.burnin taking every n.thin'th sample
+dim(gibbs_samples)
+head(gibbs_samples)
+
+mu_gibbs_samples <- gibbs_samples[,"mu"]
+sigma2_gibbs_samples <- gibbs_samples[,"sigma2"]
+inv_sigma2_gibbs_samples <- gibbs_samples[,"inv_sigma2"]
+```
+
+Own code:
+```{r, results = "hold"}
+gibbs_samples_df <- as.data.frame(gibbs_samples)
+gibbs_samples_df$iteration <- 1:nrow(gibbs_samples_df)
 
 
+plot_traceplot <- function(samples, parameter, name){
+  ggplot(samples, aes(x = iteration, y = get(parameter))) +
+    geom_line() +
+    labs(
+      title = "Traceplot for ${name}$" |> glue() |> TeX(), 
+      x = "Iteration", 
+      y = "${name}$" |> glue() |> TeX())
+}
+plot_traceplot(gibbs_samples_df, "mu", "\\mu")
+plot_traceplot(gibbs_samples_df, "sigma2", "\\sigma^2")
+plot_traceplot(gibbs_samples_df, "inv_sigma2", "1/\\sigma^2")
 
+print_summaries <- function(samples, parameter){
+  "Summary of {parameter}:" |> glue() |> message()
+  "Mean: {formatC(mean(samples), 5)}\n" |> glue() |> print() 
+  "Standard deviation: {formatC(sd(samples), 5)}\n" |> glue() |> print() 
+  "Quantiles:" |> glue() |> print() 
+  quantile(samples, c(0.025, 0.5, 0.975)) |> print()
+  "\n" |> glue() |> print() 
+}
 
+print_summaries(mu_gibbs_samples, "mu")
+print_summaries(sigma2_gibbs_samples, "sigma^2")
+print_summaries(inv_sigma2_gibbs_samples, "1/sigma^2")
+```
 
+#### 3)
+
+The following code is taken from the provided `04GibbsSampler2.r`:
+```{r}
+formula <- y ~ 1
+inla.output <- inla(formula,data=data.frame(y=y),
+                    control.family = list(hyper =
+                                            list(prec = list(prior="loggamma",param=c(a0,b0)))),
+                    control.fixed = list(mean.intercept=mu0, prec.intercept=1/sigma2_0))
+```
+
+Own code:
+```{r, results = "hold"}
+"INLA Results" |> message()
+"mu: {inla.output$summary.fixed$mean}" |> glue()
+"sigma^2: {1/inla.output$summary.hyperpar$mean}" |> glue()
+"1/sigma^2: {inla.output$summary.hyperpar$mean}" |> glue()
+"\n" |> glue()
+
+"Gibbs Sampler Results" |> message()
+"mu: {mean(mu_gibbs_samples)}" |> glue()
+"sigma^2: {mean(sigma2_gibbs_samples)}" |> glue()
+"1/sigma^2: {mean(inv_sigma2_gibbs_samples)}" |> glue()
+"\n" |> glue()
+
+"Accuracy in percent" |> message()
+print_accuracy <- function(expected, actual, name) {
+  accuracy <- 1 - abs(expected - actual) / expected
+  accuracy <- accuracy * 100
+  accuracy <- round(accuracy, 2)
+  "{name}: {accuracy}%" |> glue() |> print()
+}
+
+print_accuracy(inla.output$summary.fixed$mean, mean(mu_gibbs_samples), "mu")
+print_accuracy(1/inla.output$summary.hyperpar$mean, mean(sigma2_gibbs_samples), "sigma^2")
+print_accuracy(inla.output$summary.hyperpar$mean, mean(inv_sigma2_gibbs_samples), "1/sigma^2")
+```
+
+The results are fairly close to the INLA results. Note that the accuracy of the precision is much better than the accuracy of the variance!
+These results would be even better if we let the simulation run for longer. This sampling took about 2 seconds on my machine, while real simulations can in practice take hours.
+
+#### 4)
+
+Step by step explanation of the code:
+
+```r
+mu0 <- -3
+sigma2_0 <- 4
+a0 <- 1.6
+b0 <- 0.4
+```
+These are the (given) parameters for the prior distributions.
+
+```r
+n.iter <- 10000
+n.burnin <- 4000
+n.thin <- 1
+#n.thin <- floor((n.iter-n.burnin)/500)
+```
+These are the settings for the Gibbs sampler. The number of iterations is set to 10000, the burn-in length to 4000, and the thinning parameter to 1. 
+The burn-in is the period at the beginning of the simulation where the chain is not yet in equilibrium, so we cannot expect the samples to be representative of the posterior distribution. The thinning parameter is used to reduce the autocorrelation between samples. As we use a thinning parameter of 1, it is effectively nonexistent.
+
+```r
+n.chains <- 1
+parameters <- c("mu", "sigma2", "inv_sigma2")
+n.parameters <- length(parameters)
+
+n.tot <- n.burnin + n.iter*n.thin
+
+gibbs_samples <- matrix(NA, nrow = n.iter, ncol = n.parameters)
+colnames(gibbs_samples) <- parameters
+
+mu.sim <- rep(NA, length = n.tot)
+sigma2.sim <- rep(NA, length = n.tot)
+inv.sigma2.sim <- rep(NA, length = n.tot)
+
+#Set the initial value
+sigma2.sim[1] <- 1/runif(n.chains)
+
+# set the counter
+k <- 1
+```
+These trivial lines just set up the variables and matrices that will be used in the Gibbs sampler.
+
+```r
+#Run the for loop (only one chain)
+for(i in 2:(n.burnin+n.iter*n.thin)){
+```
+We run for the number of iterations plus the burn-in period. We start at 2 because we already set the initial value for sigma2.
+
+```r
+  mu.sim[i] <- rnorm(1,
+                     mean = (sum(y)/sigma2.sim[i-1] + mu0/sigma2_0) /
+                       (n/sigma2.sim[i-1] + 1/sigma2_0),
+                     sd = sqrt(1/(n/sigma2.sim[i-1] + 1/sigma2_0)))
+```
+
+This is the update step for mu. We sample a new value for mu from a normal distribution with the mean and standard deviation as given in the formula. The mean is calculated from the data and the prior, and the standard deviation is calculated from the precision.
+
+```r
+  sigma2.sim[i] <- 1/rgamma(1, shape = n/2 + a0,
+                            scale = 1 / (sum((y-mu.sim[i])^2)/2 + b0))
+
+  inv.sigma2.sim[i] <- 1/sigma2.sim[i]
+```
+This is the update step for sigma2. We sample a new value for sigma2 from a gamma distribution with the shape and scale as given in the formula. The shape is calculated from the data and the prior, and the scale is calculated from the precision.
+
+```r
+  # after the burnin save every n.thin'th sample
+  if((i > n.burnin) && (i%%n.thin == 0)){
+    gibbs_samples[k,] <- c(mu.sim[i], sigma2.sim[i], inv.sigma2.sim[i])
+    k <- k + 1
+  }
+  ```
+This part saves the samples after the burn-in period and only every n.thin'th sample because of the thinning parameter. Since our thinning parameter is 1, we save every sample.
+
+```r
+  if(i%%1000 == 0){
+    # report on the fly in which iteration the chain is
+    cat(i, "\n")
+  }
+}
+```
+This part prints the current iteration every 1000th iteration. This is useful to keep track of the algorithm to know that the simulation is still running and how far it has progressed.
+
+```r
+# n.iter samples after n.burnin taking every n.thin'th sample
+dim(gibbs_samples)
+head(gibbs_samples)
+
+mu_gibbs_samples <- gibbs_samples[,"mu"]
+sigma2_gibbs_samples <- gibbs_samples[,"sigma2"]
+inv_sigma2_gibbs_samples <- gibbs_samples[,"inv_sigma2"]
+```
+This finally saves the samples for mu, sigma2, and 1/sigma2 in separate vectors.
 
 
 \newpage
