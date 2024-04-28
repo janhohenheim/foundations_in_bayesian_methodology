@@ -52,6 +52,7 @@ observations in one chain with thinning set to 1.
 ```{r }
 set.seed(44566)
 
+inits_1chain <- list(a = 0, b = 0, .RNG.name = "base::Wichmann-Hill", .RNG.seed = 123456)
 
 # model initiation
 model.jags <- jags.model(
