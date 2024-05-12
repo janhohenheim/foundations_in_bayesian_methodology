@@ -512,9 +512,12 @@ Compare the output provided by the classic logistic regression and the Bayesian 
 \bigskip
 
 ```{r}
-remove(list=ls())
+rm(list=ls())
 rm(.Random.seed, envir=globalenv())
 set.seed(44566)
+
+detach("package:R2jags")
+library(rjags)
 
 # Load data
 y <- c(26,9,21,9,6,1)
@@ -634,7 +637,7 @@ fit.jags.coda <- coda.samples(
   n.iter = 10000,
   thin = 10
 )
-model.jags$iter()
+
 summary(fit.jags.coda)
 plot(fit.jags.coda)
 
