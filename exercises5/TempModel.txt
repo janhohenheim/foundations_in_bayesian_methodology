@@ -1,12 +1,18 @@
  # open quote for modelString
-model {
+model{
 # likelihood
-for(i in 1:length(Y)) {
-  Y[i] ~ dbin(p[i], n[i])
-  logit(p[i]) <- a+b*x[i]
+for (i in 1:N){ 
+y[i] ~ dnorm( mu, inv_sigma2 )    
 }
-# priors
-a ~ dnorm(0, 1.0E-4)
-b ~ dnorm(0, 1.0E-4)
+# Priors
+mu ~ dnorm( -3, 0.25 ) # prior for mu N(mu0, prec=1/sigma2_0)
+inv_sigma2 ~ dgamma( 1.6, 0.4 ) # prior for precision G(a0, b0)
+
+# transformations
+# deterministic definition of variance
+sigma2 <- 1/inv_sigma2
+
+# deterministic definition of standard deviation
+sigma <- sqrt(sigma2)
 }
 

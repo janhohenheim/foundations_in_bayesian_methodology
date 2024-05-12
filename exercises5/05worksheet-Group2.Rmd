@@ -561,11 +561,11 @@ b ~ dnorm(0, 1.0E-4)
 }
 " # close quote for modelString
 
-writeLines(modelString, con="TempModel.txt") # write to a file
+writeLines(modelString, con="MiceModel.txt") # write to a file
 
 # model initiation
 model.jags <- jags.model(
-  file = "TempModel.txt",
+  file = "MiceModel.txt",
   data = mice_data,
   inits = inits_1chain,
   n.chains = 1,
@@ -617,7 +617,7 @@ inits_4chain <- list(
 
 # model initialisation
 model.jags <- jags.model(
-  file = "TempModel.txt",
+  file = "MiceModel.txt",
   data = mice_data,
   inits = inits_4chain,
   n.chains = 4,
@@ -713,7 +713,7 @@ inits_1chain <- list(a = 0, b = 0, .RNG.name = "base::Wichmann-Hill", .RNG.seed 
 
 # model initiation
 model.jags <- jags.model(
-  file = "TempModel.txt",
+  file = "MiceModel.txt",
   data = mice_data,
   inits = inits_1chain,
   n.chains = 1,
