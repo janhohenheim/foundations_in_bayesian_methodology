@@ -16,6 +16,21 @@ output:
 # Set chunk options here 
 knitr::opts_chunk$set(echo = TRUE)
 ```
+
+
+```{r message=FALSE, warning=FALSE}
+library(glue)
+library(rjags)
+library(INLA)
+library(MASS)
+library(ggplot2)
+library(patchwork)
+library(coda)
+library(stableGR)
+source("05ess.r")
+```
+
+
 # Exercise 3
 Run the code provided in the ﬁle 05normal_example_JAGS.R and explore the interfaces in R to JAGS. Comment your ﬁndings. -> The comments can be found below the code chunks.
 
@@ -482,450 +497,313 @@ Now 2 Markov chains are used and a burnin of 4000. This time `n.iter` = 50000 in
 
 
 
+\newpage
+
 # Exercise 4
 
 Extend the code available in the file 05normal_example_JAGS.R to deal with the logistic
 regression example for mice data from Collett (2003, p.71) provided in Table 1.
 
+
+Compare the output provided by the classic logistic regression and the Bayesian inference. What are the differences?
+
+\hrulefill
+
+\bigskip
+
 ```{r}
-###################
-# Normal Example (Gibbs MCMC)
-# Extention for logistic regression with JAGS
-###################
-
 remove(list=ls())
+rm(.Random.seed, envir=globalenv())
 set.seed(44566)
 
-# set the path to the 05normal_exmple_JAGS.txt file
-path <- ""
-
-##########################################################
-# rjags interface to JAGS
-##########################################################
-
-library(rjags)
-
-list.factories(type = "rng")
-list.factories(type = "monitor")
-
-list.factories(type = "sampler")
-set.factory(name = "base::Slice", type = "sampler", state = FALSE)
-list.factories(type = "sampler")
-set.factory(name = "base::Slice", type = "sampler", state = TRUE)
-list.factories(type = "sampler")
-
-list.modules()
-load.module("glm")
-list.modules()
-unload.module("glm")
-list.modules()
-
-
-####################
-## Introduction
-####################
-
-
-# generating data
-#mu <- 4
-#sigma2 <- 16
-#n <- 30
-#y <- rnorm(n=n, mean=mu, sd=sqrt(sigma2))
-
-
-# Load the data
-# round(y,3)
-y <- c(3.048,2.980,2.029,7.249,-0.259,3.061,4.059,6.370,7.902,1.926,
-       9.094,10.489,-0.384,-3.096,2.315,5.830,-1.542,-1.544,5.714,
-       -5.182,3.828,-4.038,2.169,5.087,-0.201,4.880,3.302,3.859,
-       11.144,5.564)
-
-# Mice data from Collett, 2003
-
-# number of mice that survived
-y2 <- c(26,9,21,9,6,1)
-
-# drug concentration
-x <- c(0.0028,0.0028,0.0056,0.0112,0.0225,0.0450)
-
-# number of mice
+# Load data
+y <- c(26,9,21,9,6,1)
 n <- c(28,12,40,40,40,40)
+x <- c(0.0028, 0.0028, 0.0056, 0.0112, 0.0225, 0.0450)
 
-par(mfrow = c(1, 1))
-boxplot(y)
-summary(y)
-sd(y)
+# Priors
+mu0 <- 0
+prec_0 <- 1.0E-04
+```
 
-# Define the parameters of the prior distributions
-# Normal example
-mu0 <- -3
-sigma2_0 <- 4
-a0 <- 1.6
-b0 <- 0.4
+### INLA 
 
-################################
-# INLA exact result (motivation)
-################################
+```{r}
+formula <- y ~ 1 + x
 
-# https://www.r-inla.org/download-install
-library(INLA)
+inla.output <- inla(formula,
+                    data = data.frame(y = y, x = x-mean(x)),
+                    family="binomial",
+                    Ntrials = n,
+                    control.fixed = list(mean = list(intercept = 0, x = 0),
+                                         prec = list(intercept = prec_0, x = prec_0)),
+                    control.predictor = list(compute = T, link= 1))
+```
 
-formula <- y ~ 1
-inla.output <- inla(formula,data=data.frame(y=y),
-                    control.family = list(hyper =
-                                            list(prec = list(prior="loggamma",param=c(a0,b0)))),
-                    control.fixed = list(mean.intercept=mu0, prec.intercept=1/sigma2_0))
+### JAGS: one chain
 
+```{r results = "hold"}
 
-#############################
-# Step 2: JAGS model file as a string in rjags with coda
-#############################
-set.seed(44566)
+mice_data <- list(Y = y, x = x - mean(x), n = n)
 
-library(rjags)
-library(coda)
-
-
-#sessionInfo()
-
-wb_data <- list( N=30,
-                 y=c(3.048,2.980,2.029,7.249,-0.259,3.061,4.059,6.370,7.902,1.926,
-                     9.094,10.489,-0.384,-3.096,2.315,5.830,-1.542,-1.544,5.714,
-                     -5.182,3.828,-4.038,2.169,5.087,-0.201,4.880,3.302,3.859,
-                     11.144,5.564)
-)
-
-wb_inits <- list( mu=-0.2381084, inv_sigma2=0.3993192 )
+inits_1chain <- list(a = 0, b = 0, .RNG.name = "base::Wichmann-Hill", .RNG.seed = 123456)
 
 modelString = " # open quote for modelString
-model{
+model {
 # likelihood
-for (i in 1:N){
-y[i] ~ dnorm( mu, inv_sigma2 )
+for(i in 1:length(Y)) {
+  Y[i] ~ dbin(p[i], n[i])
+  logit(p[i]) <- a+b*x[i]
 }
-# Priors
-mu ~ dnorm( -3, 0.25 ) # prior for mu N(mu0, prec=1/sigma2_0)
-inv_sigma2 ~ dgamma( 1.6, 0.4 ) # prior for precision G(a0, b0)
-
-# transformations
-# deterministic definition of variance
-sigma2 <- 1/inv_sigma2
-
-# deterministic definition of standard deviation
-sigma <- sqrt(sigma2)
+# priors
+a ~ dnorm(0, 1.0E-4)
+b ~ dnorm(0, 1.0E-4)
 }
 " # close quote for modelString
 
 writeLines(modelString, con="TempModel.txt") # write to a file
 
-##########################################################
-# JAGS only one chain
-##########################################################
-
 # model initiation
 model.jags <- jags.model(
   file = "TempModel.txt",
-  data = wb_data,
-  inits = wb_inits,
+  data = mice_data,
+  inits = inits_1chain,
   n.chains = 1,
   n.adapt = 4000
 )
 
-str(model.jags)
-class(model.jags)
-attributes(model.jags)
-list.samplers(model.jags)
-
 # burn-in
-
 update(model.jags, n.iter = 4000)
 
 # sampling
 fit.jags.coda <- coda.samples(
   model = model.jags,
-  variable.names = c("mu", "sigma2", "inv_sigma2"),
+  variable.names = c("a", "b"),
   n.iter = 10000,
-  thin = 1
+  thin = 10
 )
 
-str(fit.jags.coda)
-class(fit.jags.coda)
-attributes(fit.jags.coda)
-
-summary(fit.jags.coda)
-#print(fit.jags.coda)
+#summary(fit.jags.coda)
 plot(fit.jags.coda)
-
 
 # store samples for each parameter from the chain into separate objects
 m.fit.jags.coda <- as.matrix(fit.jags.coda)
-mu.sim <- m.fit.jags.coda[,"mu"]
-sigma2.sim <- m.fit.jags.coda[,"sigma2"]
-inv_sigma2.sim <- m.fit.jags.coda[,"inv_sigma2"]
+a.sim <- m.fit.jags.coda[,"a"]
+b.sim <- m.fit.jags.coda[,"b"]
 
-library(MASS)
-
-par(mfrow=c(1,1))
-# plot for mean
-rg <- range(inla.output$marginals.fixed$"(Intercept)"[,2])
-truehist(mu.sim, prob=TRUE, col="yellow", xlab=expression(mu),ylim=rg)
-lines(density(mu.sim),lty=3,lwd=3, col=2)
+par(mfrow=c(1,2), mar=c(6.1, 3.1, 4.1, 2.1), xpd=TRUE)
+# plot for intercept
+truehist(a.sim, prob=TRUE, col="lavender", xlab=expression(a))
+lines(density(a.sim),lty=3,lwd=3, col=2)
 lines(inla.output$marginals.fixed$"(Intercept)",lwd=2)
-legend("topright",c("MCMC: JAGS","INLA"),lty=c(3,1),lwd=c(2,2),col=c(2,1),cex=1.0,bty="n")
 
-# plot for variance
-m_var <-inla.tmarginal(function(x) 1/x, inla.output$marginals.hyperpar[[1]])
-rg <- range(m_var[,2])
-truehist(sigma2.sim, prob=TRUE, col="yellow", xlab=expression(sigma^2),ylim=rg)
-lines(density(sigma2.sim),lty=3,lwd=3, col=2)
-lines(m_var,lwd=2)
-legend("topright",c("MCMC: JAGS","INLA"),lty=c(3,1),lwd=c(2,2),col=c(2,1),cex=1.0,bty="n")
+# plot for slope
+truehist(b.sim, prob=TRUE, col="lavender", xlab=expression(b))
+lines(density(b.sim),lty=3,lwd=3, col=2)
+lines(inla.output$marginals.fixed$"x",lwd=2)
+legend("topright",c("MCMC: JAGS","INLA"), inset=c(-0.18,0), 
+       lty=c(3,1),lwd=c(2,2),col=c(2,1),cex=0.7,bty="n")
+```
 
-# plot for precision
-truehist(inv_sigma2.sim, prob=TRUE, col="yellow", xlab=expression(1/sigma^2))
-lines(density(inv_sigma2.sim),lty=3,lwd=3, col=2)
-lines(inla.output$marginals.hyperpar[[1]],lwd=2)
-legend("topright",c("MCMC: JAGS","INLA"),lty=c(3,1),lwd=c(2,2),col=c(2,1),cex=1.0,bty="n")
+### JAGS: several chains
 
+```{r results = "hold"}
 
-
-
-
-
-
-
-
-
-
-
-
-
-##########################################################
-# JAGS several chains
-##########################################################
-
-wb_inits <- function() {
-  list(mu = rnorm(1),
-       inv_sigma2 = runif(1)
-  )
-}
+inits_4chain <- list(
+  list(a=0, b = 0, .RNG.name = "base::Super-Duper", .RNG.seed = 12345),
+  list(a=0, b = 0, .RNG.name = "base::Super-Duper", .RNG.seed = 123456),
+  list(a=0, b = 0, .RNG.name = "base::Super-Duper", .RNG.seed = 1234567),
+  list(a=0, b = 0, .RNG.name = "base::Super-Duper", .RNG.seed = 12345678))
 
 # model initialisation
 model.jags <- jags.model(
   file = "TempModel.txt",
-  data = wb_data,
-  inits = wb_inits,
+  data = mice_data,
+  inits = inits_4chain,
   n.chains = 4,
   n.adapt = 4000
 )
 
 # burn-in
-
 update(model.jags, n.iter = 4000)
 
 # sampling/monitoring
 fit.jags.coda <- coda.samples(
   model = model.jags,
-  variable.names = c("mu", "sigma2", "inv_sigma2"),
+  variable.names = c("a", "b"),
   n.iter = 10000,
   thin = 10
 )
-
-#n.thin<-floor((n.iter-n.adapt)/500)
-#floor((10000-4000)/500)=12
-
+model.jags$iter()
 summary(fit.jags.coda)
 plot(fit.jags.coda)
 
+# store samples for each parameter from the chain into separate objects
+m.fit.jags.coda <- as.matrix(fit.jags.coda)
+a.sim <- m.fit.jags.coda[,"a"]
+b.sim <- m.fit.jags.coda[,"b"]
 
-
-# store samples for each parameter from the chains into separate vectors
-m.fit.jags.coda <-as.matrix(fit.jags.coda)
-mu.sim <- m.fit.jags.coda[,"mu"]
-sigma2.sim <- m.fit.jags.coda[,"sigma2"]
-inv_sigma2.sim <- m.fit.jags.coda[,"inv_sigma2"]
-
-
-par(mfrow=c(1,1))
-# plot for mean
-rg <- range(inla.output$marginals.fixed$"(Intercept)"[,2])
-truehist(mu.sim, prob=TRUE, col="yellow", xlab=expression(mu),ylim=rg)
-lines(density(mu.sim),lty=3,lwd=3, col=2)
+par(mfrow=c(1,2), mar=c(6.1, 3.1, 4.1, 2.1), xpd=TRUE)
+# plot for intercept
+truehist(a.sim, prob=TRUE, col="lavender", xlab=expression(a))
+lines(density(a.sim),lty=3,lwd=3, col=2)
 lines(inla.output$marginals.fixed$"(Intercept)",lwd=2)
-legend("topright",c("MCMC: JAGS","INLA"),lty=c(3,1),lwd=c(2,2),col=c(2,1),cex=1.0,bty="n")
 
-# plot for variance
-m_var <-inla.tmarginal(function(x) 1/x, inla.output$marginals.hyperpar[[1]])
-rg <- range(m_var[,2])
-truehist(sigma2.sim, prob=TRUE, col="yellow", xlab=expression(sigma^2),ylim=rg)
-lines(density(sigma2.sim),lty=3,lwd=3, col=2)
-lines(m_var,lwd=2)
-legend("topright",c("MCMC: JAGS","INLA"),lty=c(3,1),lwd=c(2,2),col=c(2,1),cex=1.0,bty="n")
-
-# plot for precision
-truehist(inv_sigma2.sim, prob=TRUE, col="yellow", xlab=expression(1/sigma^2))
-lines(density(inv_sigma2.sim),lty=3,lwd=3, col=2)
-lines(inla.output$marginals.hyperpar[[1]],lwd=2)
-legend("topright",c("MCMC: JAGS","INLA"),lty=c(3,1),lwd=c(2,2),col=c(2,1),cex=1.0,bty="n")
+# plot for slope
+truehist(b.sim, prob=TRUE, col="lavender", xlab=expression(b))
+lines(density(b.sim),lty=3,lwd=3, col=2)
+lines(inla.output$marginals.fixed$"x",lwd=2)
+legend("topright",c("MCMC: JAGS","INLA"), inset=c(-0.2,0), 
+       lty=c(3,1),lwd=c(2,2),col=c(2,1),cex=0.7,bty="n")
 
 
-## CODA
-summary(fit.jags.coda)
-effectiveSize(fit.jags.coda)
-lapply(fit.jags.coda, effectiveSize)
-gelman.diag(fit.jags.coda,autoburnin=TRUE)
-gelman.plot(fit.jags.coda,autoburnin=TRUE)
-geweke.diag(fit.jags.coda)
-geweke.plot(fit.jags.coda)
-heidel.diag(fit.jags.coda)
-raftery.diag(fit.jags.coda)
-coda:::traceplot(fit.jags.coda)
-
-
-# "DIC" penalised expected deviance computation
-dic1<-dic.samples(model=model.jags, n.iter=1000, type="popt")
-#dic2<-dic.samples(model=model.jags2, n.iter=1000, type="popt")
-
-# "DIC" penalised expected deviance comparison
-# There is no absolute scale for DIC comparison
-# SE is very helpful
-
-#diffdic(dic1,dic2)
-
-
-
-
-
-
-
-
-
-######
-# Additional sampling in several chains, preparation for BGR/Gelman
-# with runjags
-######
-
-library(runjags)
-
-###############
-# runjags interface with a link to a file
-###############
-
-
-wb_data <- list( N=30,
-                 y=c(3.048,2.980,2.029,7.249,-0.259,3.061,4.059,6.370,7.902,1.926,
-                     9.094,10.489,-0.384,-3.096,2.315,5.830,-1.542,-1.544,5.714,
-                     -5.182,3.828,-4.038,2.169,5.087,-0.201,4.880,3.302,3.859,
-                     11.144,5.564)
-)
-
-wb_inits <- function() {
-  list(mu = rnorm(1),
-       inv_sigma2 = runif(1)
-  )
-}
-
-fit.runjags<-run.jags(model=paste(path,"05normal_exmple_JAGS.txt",sep=""),
-                      monitor=c("mu", "sigma2", "inv_sigma2"),
-                      data=wb_data,
-                      inits=wb_inits,
-                      n.chains=4,
-                      burnin=4000,
-                      sample=5000,
-                      adapt=1000,
-                      thin=2)
-
-
-plot(fit.runjags)
-print(fit.runjags)
-
-# CODA
-fit.runjags.coda<-as.mcmc.list(fit.runjags)
-summary(fit.runjags.coda)
-# conduct CODA
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-##########################################################
-# R2jags wrapper to rjags interface to JAGS several chains
-##########################################################
-
-
-
-library(R2jags)
-
-#rm(list=ls())
-
-
-###############
-# R2jags wrapper with a link to a file
-###############
-
-
-wb_data <- list( N=30,
-                 y=c(3.048,2.980,2.029,7.249,-0.259,3.061,4.059,6.370,7.902,1.926,
-                     9.094,10.489,-0.384,-3.096,2.315,5.830,-1.542,-1.544,5.714,
-                     -5.182,3.828,-4.038,2.169,5.087,-0.201,4.880,3.302,3.859,
-                     11.144,5.564)
-)
-
-#define parameters
-params<-c("mu", "sigma2", "inv_sigma2")
-
-# define inits
-inits1 <- list(mu=rnorm(1), inv_sigma2=runif(1),
-               .RNG.name="base::Super-Duper", .RNG.seed=1)
-inits2 <- list(mu=rnorm(1), inv_sigma2=runif(1),
-               .RNG.name="base::Wichmann-Hill", .RNG.seed=2)
-wb_inits <- list(inits1,inits2)
-
-
-fit.R2jags<-jags(data=wb_data,
-                 inits=wb_inits,
-                 parameters.to.save=params,
-                 model.file=paste(path,"05normal_exmple_JAGS.txt",sep=""),
-                 n.chains=2,
-                 n.iter=50000,
-                 n.burnin=4000,
-                 n.thin=5,
-                 DIC = TRUE,
-                 jags.seed = 321,
-                 refresh =100,
-                 digits = 4,
-                 jags.module = c("glm","dic"))
-
-
-# Standard plots of the monitored variables
-plot(fit.R2jags)
-
-# Display summary statistics
-print(fit.R2jags)
-
-# traceplot
-traceplot(fit.R2jags)
-
-
-# CODA
-fit.R2jags.coda<-as.mcmc(fit.R2jags)
-summary(fit.R2jags.coda)
-# conduct CODA
 ```
+
+\newpage
+
+Classical logistic regression model
+
+```{r}
+
+df <- data.frame("dosage" = x, "numtot" = n, "prop" = y/n)
+
+# Centering dosages
+df$dosage_centered <- df$dosage - mean(df$dosage)
+
+glm.model <- glm(prop ~ dosage_centered, df, family= "binomial", weight= n)
+
+summary(glm.model)$coef
+```
+
+\bigskip
+Conclusion/Comparison:  
+
+...
+
+
+\newpage
 
 # Exercise 5
 
+
+
+
+
+
+
+\newpage
+
 # Exercise 6
+
+Run the code from the previous exercise with mice data with only one chain monitoring beta under the following two conditions:
+
+## 1
+
+After an adaptation phase of 1000 and a burn-in of 4000 draw a sample of 1000
+observations in one chain with thinning set to 1.
+
+\hrulefill
+
+\bigskip
+
+```{r }
+set.seed(44566)
+
+inits_1chain <- list(a = 0, b = 0, .RNG.name = "base::Wichmann-Hill", .RNG.seed = 123456)
+
+# model initiation
+model.jags <- jags.model(
+  file = "TempModel.txt",
+  data = mice_data,
+  inits = inits_1chain,
+  n.chains = 1,
+  n.adapt = 1000)
+
+# burn-in
+update(model.jags, n.iter = 4000)
+
+# sampling
+fit.jags.coda_1 <- coda.samples(
+  model = model.jags,
+  variable.names = "b",
+  n.iter = 1000,
+  thin = 1)
+
+#summary(fit.jags.coda)
+par(mfrow=c(1,2), mar=c(10,2,4,3))
+plot(fit.jags.coda_1)
+
+```
+\bigskip
+
+## 2
+
+After an adaptation phase of 1000 and a burn-in of 4000 draw a sample of 10000 observations in one chain with thinning set to 10.
+
+\hrulefill
+
+\bigskip
+
+```{r}
+set.seed(44566)
+
+# sampling
+fit.jags.coda_2 <- coda.samples(
+  model = model.jags,
+  variable.names = "b",
+  n.iter = 10000,
+  thin = 10)
+
+#summary(fit.jags.coda)
+par(mfrow=c(1,2), mar=c(10,2,4,3))
+plot(fit.jags.coda_2)
+```
+
+
+## (a) 
+
+For which of the above conditions the ESS estimates will be larger and why?
+
+\hrulefill
+
+\bigskip
+
+Without thinning, the samples are dependent on preceding samples since the Markov Chain is kept intact. With thinning, only every x'th sample is chosen, so this dependence is disrupted, and autocorrelation is reduced. Which lower autocorrelation, the resulting ESS is higher.
+
+\bigskip
+
+## (b) 
+
+To check your answer: Apply both the 05ess.R code and the function effectiveSize from the coda package. Compare the ESS estimates with those obtained with the n.eff function from package stableGR (Vats and Knudson, 2021). Please report your findings.
+
+\hrulefill
+
+\bigskip
+
+```{r}
+
+ess_t1 <-   ess(fit.jags.coda_1[[1]], 1000)
+ess_t10 <- ess(fit.jags.coda_2[[1]], 1000)
+
+coda_ess_t1 <- as.numeric(effectiveSize(fit.jags.coda_1))
+coda_ess_t10 <- as.numeric(effectiveSize(fit.jags.coda_2))
+
+stableGR_ess_t1 <- as.numeric(n.eff(fit.jags.coda_1)$n.eff)
+stableGR_ess_t10 <- as.numeric(n.eff(fit.jags.coda_2)$n.eff)
+
+```
+
+
+\begin{table}[h!]
+\begin{tabular}{lccc}
+\hline
+Setting & custom function & coda::effectiveSize & stableGR::n.eff \\ \hline
+n.iter = 1000, thin = 1 & `r round(ess_t1,2)` & `r round(coda_ess_t1,2)` & `r round(stableGR_ess_t1,2)`  \\ \hline
+n.iter = 10000, thin = 10 & `r round(ess_t10,3)` & `r round(coda_ess_t10,2)` & `r round(stableGR_ess_t10,3)`  \\ \hline
+\end{tabular}
+\end{table}
+
+
+Indeed, the effective sample sizes are higher with thinning.
+The different packages don't all return exactly the same values, but they're in comparable ranges.
 
