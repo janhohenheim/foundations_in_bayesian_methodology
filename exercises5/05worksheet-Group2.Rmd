@@ -634,7 +634,7 @@ fit.jags.coda <- coda.samples(
   n.iter = 10000,
   thin = 10
 )
-model.jags$iter()
+
 summary(fit.jags.coda)
 plot(fit.jags.coda)
 
@@ -816,5 +816,4 @@ n.iter = 10000, thin = 10 & `r round(ess_t10,3)` & `r round(coda_ess_t10,2)` & `
 
 
 Indeed, the effective sample sizes are higher with thinning.
-The different packages don't all return exactly the same values, but they're in comparable ranges.
-
+The custom function and stableGR seem to return the same result. The result from coda is slightly different but in a comparable range.
