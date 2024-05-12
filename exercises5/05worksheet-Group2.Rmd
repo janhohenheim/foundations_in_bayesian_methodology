@@ -512,12 +512,9 @@ Compare the output provided by the classic logistic regression and the Bayesian 
 \bigskip
 
 ```{r}
-rm(list=ls())
+remove(list=ls())
 rm(.Random.seed, envir=globalenv())
 set.seed(44566)
-
-detach("package:R2jags")
-library(rjags)
 
 # Load data
 y <- c(26,9,21,9,6,1)
@@ -637,7 +634,7 @@ fit.jags.coda <- coda.samples(
   n.iter = 10000,
   thin = 10
 )
-
+model.jags$iter()
 summary(fit.jags.coda)
 plot(fit.jags.coda)
 
@@ -681,8 +678,19 @@ summary(glm.model)$coef
 \bigskip
 Conclusion/Comparison:  
 
-... 
-
+The estimates for the intercept a and slope b from the JAGS model
+are actually relatively similar compared to the classical
+logistic regression with the function glm().
+Since we estimated the distribution of the slope
+and intercept, we can even obtain quantiles
+of a and b, which is not possible with the classical approach.
+Furthermore, we have a quantification of the computational MCMC
+error with the naive se and time-series se, which do not exist in the
+classical framework.
+Finally, we can see the fundamental differences between the classical
+and Bayesian statistics, reflected in the standard error of the estimates in
+the classical approach, and the empirical standard deviation in the Bayesian
+model.
 
 \newpage
 
