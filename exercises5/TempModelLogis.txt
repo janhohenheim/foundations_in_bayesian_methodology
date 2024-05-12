@@ -1,0 +1,12 @@
+
+model {
+# likelihood
+for(i in 1:length(Y)) {
+Y[i] ∼ dbin(p[i], n[i])
+logit(p[i]) <- a+b*x[i]
+}
+# priors
+a ∼ dnorm(0,1.0E-4)
+b ∼ dnorm(0,1.0E-4)
+}
+
