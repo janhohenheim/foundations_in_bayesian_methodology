@@ -695,6 +695,268 @@ model.
 # Exercise 5
 
 
+Run the logistic regression in JAGS for mice data from Collett (2003, p.71) provided in Table 1,
+which you developed in Exercise 4 above.
+
+```{r}
+# the covariate values (dose)
+x_original <- c(0.0028, 0.0028,0.0056, 0.0112, 0.0225, 0.0450)
+
+# center covariate values
+x <- x_original - mean(x_original)
+
+# number of mice deaths
+y <- c(26, 9, 21, 9, 6, 1)
+
+# total number of mice
+n <- c(28, 12, 40, 40, 40, 40)
+
+## Fit logistic regression
+m <- glm(formula = cbind(y, n - y) ~ x, family = binomial)
+
+#create data
+data <- matrix(NA, nrow=6, ncol=3)
+
+colnames(data) <- list("x", "y", "n")
+data[,1] <- x
+data[,2] <- y
+data[,3] <- n
+mice.data <- list(y=data[,2], x=data[,1],
+n=data[,3], N = nrow(data))
+```
+
+```{r}
+
+# define parameters
+mice.params <- c("a", "b")
+
+# define initial values for 2 chains
+inits1 <- list(a=rnorm(1), b=rnorm(1),
+               .RNG.name="base::Super-Duper", .RNG.seed=1)
+
+inits2 <- list(a=rnorm(1), b=rnorm(1),
+               .RNG.name="base::Wichmann-Hill", .RNG.seed=2)
+
+mice.inits <- list(inits1, inits2)
+
+modelString = " 
+# open quote for modelString 
+model{ 
+for(i in 1:N){
+y[i] ~ dbin(p[i],n[i])
+logit(p[i]) <- a+b*x[i]
+}
+a ~ dnorm(0,0.0001)
+b ~ dnorm(0,0.0001)
+}" # close quote for modelString
+
+writeLines(modelString, con="logistic_regression_JAGS.txt")
+
+# model initiation
+mice.rjags <- jags.model(file = "logistic_regression_JAGS.txt",
+                         data = mice.data,
+                         inits = mice.inits,
+                         n.chains = 2,
+                         n.adapt = 4000)
+N.iter <- 10000
+N.thin <- 1
+N.burnin <- 4000
+
+# burn-in
+update(mice.rjags, n.iter = N.burnin)
+
+# sampling
+fit.rjags.coda <- coda.samples(
+  model = mice.rjags,
+  variable.names = mice.params,
+  n.iter = N.iter,
+  thin = N.thin)
+
+# store samples for each parameter
+a.sample <- fit.rjags.coda[,"a"]
+b.sample <- fit.rjags.coda[,"b"]
+summary(fit.rjags.coda)
+
+```
+## 1
+```{r}
+##########################
+# CODA logistic regression
+##########################
+# Have we reached convergence in the stationary target (= posterior) distribution 
+# with the MCMC, or do we need more simulations (=samples)?
+
+###############
+# 1) Rank plots
+###############
+# To asses convergence to stationarity we implement rank plots
+# implement rank plots using posterior samples from each chain to assess mixing and convergence 
+# Convergence diagnostics do not guarantee convergence; they only provide evidence against non-convergence. 
+# False negatives (type II errors) are a significant risk, leading to potentially invalid inferences.
+
+library(bayesplot)
+
+# Use JAGS model with several chains, output 'fit.jags.coda' from above
+# convert output to format that can be used with bayesplot
+rank_data <- as.mcmc.list(fit.rjags.coda)
+
+# Rank plots for each chain 
+bayesplot::mcmc_rank_hist(rank_data, pars = c("a", "b"))
+```
+Rank plots show how well multiple chains of MCMC simulation are mixing and exploring the posterior distribution. 
+Mixing well? If the histograms are uniformly distributed for each chain, we gave good mixing. Which means that the chains are exploring the posterior distribution well. 
+
+- **Uniform Distributions:** indicates good mixing and that chains are exploring the posterior distribution well.
+- **Non-uniform Distributions:** may suggest issues with convergence or exploration of the posterior space.
+
+We can see here that the chains are not quite uniformly distributed. Observed non-uniform distributions in the rank plots for parameters a and b suggest potential issues. This might indicate that some chains are exploring different regions of the parameter space, or there are areas that are underexplored, leading to possible convergence issues.
+
+## 2
+```{r}
+###################################
+# 2) Formal convergence diagnostics
+###################################
+library(coda)
+
+# a) 
+heidel.diag(fit.rjags.coda)
+```
+Heidelberger & Welch diagnostic test check stationarity and the precision of the estimates (halfwidth test).
+
+- **Stationarity Test:** All parameters passed the stationarity test in the first set, indicating that the chains are stable over iterations. However, in the second set, parameter a failed, suggesting that not all chains may have reached a stable state across all simulations.
+
+- **Halfwidth Test:** For those parameters and simulations where the stationarity test was passed, the halfwidth test also passed, indicating satisfactory precision of the estimates. The failure of parameter a in the second set to pass the stationarity test implies that the halfwidth test could not be reliably evaluated.
+```{r}
+### Raftery & Lewis Diagnostics ### ----------------------------------
+# General idea: Non-parametric approach, based on precision of quantile estimation 
+# of the target distribution. Estimates the number of samples needed to estimate
+# quantiles of the posterior distribution with a certain precision.
+
+# b)
+raftery.diag(fit.rjags.coda)
+```
+Dependence factor measures the degree to which autocorrelation within the chain inflates the required sample size compared to what would be needed if the samples were independent. Higher values indicate more autocorrelation and thus less efficient sampling. For instance, parameter b in the second result set had a dependence factor of 27.00, suggesting significant autocorrelation.
+```{r}
+### Geweke Diagnostics ### -------------------------------------------
+# General idea: If MCMC has reached convergence, moments are constant in "time".
+# Hence, compare mean from first part of MCMC (without burnin!) to mean of last
+# part from MCMC with a Z-test.
+
+# c) 
+geweke.diag(fit.rjags.coda)
+```
+geweke.diag shows that the z-scores are not larger than 1.96. 
+The z-scores for a and b are within the bound. This suggests that there is no significant difference between the early and late segments of the chain. So we have of convergence to stationarity. So a and b likely drawn from a stationary distributions.
+
+
+```{r}
+geweke.plot(fit.rjags.coda)
+```
+However, now we see in the visual observation that we have outliers. 
+chain 1: the plots show that the some values are outside of the upper bound  (1.96). 
+chain2: the plot show that the some values are outside of the lower bound  (-1.96). 
+
+```{r}
+### Gelman-Rubin Diagnostic ### ----------------------------
+# General idea: Run multiple MCMC (here: 4) and compare the within-chain variance
+# to the total variance in all chains ( ANOVA). The "potential scale reduction
+# factors" are computed based on normal approximations.
+# Chains mix well and converge, if R -> 1.
+
+# Practical implications: If the upper limit of the CI for the the potential scale 
+# reduction factor is close to 1, then approximate convergence in the posterior
+# distribution is diagnosed.
+
+# (Autoburnin = TRUE: First half of samples is not considered).
+# (Assumption: Stationary distribution is normal (if normality assumption
+# is violated, a transformation of the data can be applied)).
+
+# d)
+gelman.diag(fit.rjags.coda)
+```
+The upper limit of the CI is close to 1. So we have proper convergence. 
+
+
+
+```{r}
+gelman.plot(fit.rjags.coda, autoburnin=TRUE)
+```
+Figures show that the shrink factor R decreases to 1 with increasing number of
+iterations. 
+
+
+
+```{r}
+#e) 
+
+library(stableGR)
+stable.GR(fit.rjags.coda)
+```
+
+psrf is the potential scale reduction factor. That is the R ans these are smaller than 1.01.
+
+
+## 3
+```{r}
+# Modify the original n.burnin, n.iter and n.thin parameters as suggested by the
+# convergence diagnostics and re-run the MCMC simulation. Do the new results differ
+# much from those in the first run?
+# Adjusted model initiation
+
+mice.rjags <- jags.model(file = "logistic_regression_JAGS.txt",
+data = mice.data,
+inits = mice.inits,
+n.chains = 2,
+n.adapt = 6000) # increased burn-in
+N.iter <- 20000 # increased iterations
+N.thin <- 5 # increased thinning
+
+# Re-run sampling
+update(mice.rjags, n.iter = 6000) # new burn-in
+fit.rjags.coda_adjusted <- coda.samples(
+model = mice.rjags,
+variable.names = mice.params,
+n.iter = N.iter,
+thin = N.thin)
+summary(fit.rjags.coda_adjusted)
+```
+```{r}
+# Original fit summary
+original_summary <- summary(fit.rjags.coda)
+# Adjusted fit summary after changing n.burnin, n.iter, n.thin
+adjusted_summary <- summary(fit.rjags.coda_adjusted)
+# Compare summaries
+knitr::kable(list(
+Original = original_summary$statistics,
+Adjusted = adjusted_summary$statistics
+))
+```
+
+```{r}
+# Plotting trace plots for comparison
+par(mfrow=c(2, 2))
+plot(fit.rjags.coda, main="Original Run")
+plot(fit.rjags.coda_adjusted, main="Adjusted Run")
+```
+```{r}
+# Check effective sample size changes
+original_ess <- effectiveSize(fit.rjags.coda)
+adjusted_ess <- effectiveSize(fit.rjags.coda_adjusted)
+# Display ESS comparison
+knitr::kable(list(
+Original_ESS = original_ess,
+Adjusted_ESS = adjusted_ess
+))
+```
+
+The results do differ. The effective sample sizes (ESS) have increased in our adjusted MCMC simulation.
+Higher ESS values suggest that the chain is sampling more effectively from the posterior distribution, providing
+more reliable estimates and reducing the autocorrelation among sampled values. With higher ESS we
+also have:
+
+- more precise estimates of the mean, variance, and other moments of the posterior distribution.
+- Improved accuracy of quantile estimates.
+- Reduced Monte Carlo error.
 
 
 
