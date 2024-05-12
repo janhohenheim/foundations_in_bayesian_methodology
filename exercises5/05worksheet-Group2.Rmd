@@ -659,8 +659,6 @@ legend("topright",c("MCMC: JAGS","INLA"), inset=c(-0.2,0),
 
 ```
 
-\newpage
-
 Classical logistic regression model
 
 ```{r}
@@ -816,4 +814,5 @@ n.iter = 10000, thin = 10 & `r round(ess_t10,3)` & `r round(coda_ess_t10,2)` & `
 
 
 Indeed, the effective sample sizes are higher with thinning.
-The custom function and stableGR seem to return the same result. The result from coda is slightly different but in a comparable range.
+The different packages don't all return exactly the same values, but they're in comparable ranges.
+
