@@ -1,0 +1,269 @@
+---
+title: "Presentation 5, Group 2: Classical Meta-Analysis of Binomial Outcomes"
+author: "Jan Hohenheim"
+date: "2024-05-14"
+output:
+  pdf_document: 
+    latex_engine: xelatex
+  html_document:
+    df_print: paged
+---
+
+```{r setup, include=FALSE}
+# Set chunk options here 
+
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r, message=F}
+# Visual stuff
+library(tidyverse)
+library(broom)
+library(ggthemes)
+library(glue)
+library(knitr)
+
+# Meta analysis
+library(lme4)
+library(metafor)
+
+theme_set(theme_solarized_2())
+```
+
+Source for theory: *Chang BH, Hoaglin DC. Meta-Analysis of Odds Ratios: Current Good Practices*
+
+\newpage
+
+## Data
+Source: *Pagliaro L, D’Amico G, Sorensen TI, et al. Prevention of first bleeding in cirrhosis. A meta-analysis of randomized trials of nonsurgical treatment*
+
+```{r, echo=FALSE, results='asis'}
+dat.raw <- tibble(
+  trial_id = 1:19,
+  n_placebo = c(36, 53, 18, 22, 46, 60, 60, 69, 41, 20, 41, 35, 138, 51, 72, 16, 28, 19, 24),
+  n_active = c(35, 56, 16, 23, 49, 53, 53, 71, 41, 21, 42, 33, 143, 55, 73, 13, 21, 18, 22),
+  deaths_placebo = c(14, 29, 6, 6, 34, 14, 27, 26, 19, 2, 18, 21, 23, 24, 14, 4, 8, 6, 5),
+  deaths_active = c(2, 12, 6, 4, 30, 13, 15, 16, 10, 0, 18, 20, 46, 19, 18, 2, 6, 7, 5)
+)
+dat.raw |>
+  kable(caption = "Raw data")
+```
+
+```{r}
+offset <- 0.001
+
+dat <- dat.raw |>
+  mutate(
+    trial_id = as.factor(trial_id),
+  ) |>
+  mutate(
+    p_placebo = (deaths_placebo + offset) / (n_placebo + 2 * offset),
+    p_active = (deaths_active + offset) / (n_active + 2 * offset)
+  ) |>
+  mutate(
+    log_odds_control = log(p_placebo / (1 - p_placebo)),
+    log_odds_active = log(p_active / (1 - p_active))
+  ) |>
+  mutate(
+    log_or = log_odds_active - log_odds_control,
+    var_log_or =  
+      1 / (deaths_placebo + offset) + 
+      1 / (n_placebo - deaths_placebo + offset) + 
+      1 / (deaths_active + offset) + 
+      1 / (n_active - deaths_active + offset)
+  )
+```
+```{r}
+dat |> 
+  filter(trial_id != 10) |>
+  ggplot(aes(x = log_or, y = trial_id)) +
+  geom_vline(xintercept = 0, linetype = "dashed") +
+  geom_point(size = 3) +
+  geom_errorbarh(aes(
+    xmin = log_or - 1.96 * sqrt(var_log_or), 
+    xmax = log_or + 1.96 * sqrt(var_log_or)), height = 0) +
+  labs(
+    title = "Forest plot of the included studies",
+    x = "Log odds ratio",
+    y = "Study ID"
+  )
+```
+
+\newpage
+## Methods
+
+For binomial outcomes, the measured effects are usually transformed to the log-odds ratio.
+
+$$
+y_i := \log\left(\frac{p_i}{1-p_i}\right)
+$$
+
+Where $p_i$ is the probability of the event in group $i$.
+
+The variance of the log-odds ratio is approximated by
+
+$$
+\text{Var}(y_i) \approx \frac{1}{a} + \frac{1}{b} + \frac{1}{c} + \frac{1}{d}
+$$
+
+Where $a, b, c, d$ are the number of events and non-events in the two groups:
+
+```{r table2, echo=FALSE, message=FALSE, warnings=FALSE, results='asis'}
+tabl <- "
+|          | Responder | Non-Responder |
+|----------|:---------:|:-------------:|
+| Active   |   a       |   b           |
+| Placebo  |   c       |   d           |
+"
+cat(tabl)
+```
+\newpage
+### Fixed effect
+The measurement $y$ is an estimator of the underlying effect $\mu$ with an error term $\epsilon$. $\mu$ is assumed to be the same for all studies, while $\epsilon$ varies between studies.
+
+$$
+y_i = \mu + \epsilon_i, \quad \epsilon_i \sim \mathcal{N}(0, \sigma^2)
+$$
+
+The estimator $\hat{\mu}$ is the weighted average of the individual studies' estimates:
+
+$$
+\hat{\mu} = \frac{\sum \kappa_i y_i}{\sum \kappa_i}, \quad \kappa_i := \frac{1}{\sigma_i^2}
+$$
+Where $\sigma_i^2$ is the variance inside the study $i$.
+
+If the number of subjects in each group is large, the variance of $\hat{\mu}$ can be approximated by
+
+$$
+\text{Var}(\hat{\mu}) \approx \frac{1}{\sum \kappa_i}
+$$
+In R, all of this is done quite simply with the `rma` function from the `metafor` package.
+
+```{r, results='hold'}
+rma.fixed <- rma(
+  yi = dat$log_or, 
+  vi = dat$var_log_or, 
+  method = "FE") # FE stands for "Fixed Effect"
+
+rma.fixed |> summary()
+rma.fixed_mean <- rma.fixed$beta[[1]]
+rma.fixed_se <- rma.fixed$se[1]
+```
+\newpage
+
+### Random effects
+
+$\mu$ can now also vary between studies:
+
+$$
+y_i = \mu_i + \epsilon_i, \quad \epsilon_i \sim \mathcal{N}(0, \sigma^2)
+$$
+
+Consequently, we now have to consider two sources of variation: The variance inside a study $\sigma_i^2$ and the variance between studies $\tau^2$:
+
+$$
+\text{Var}(y_i) \approx \sigma_i^2 + \tau^2
+$$
+
+The new estimator $\hat{\mu}'$ looks very similar to the fixed effect estimator, it only uses the new precision
+$$
+\hat{\mu}' = \frac{\sum \kappa_i' y_i}{\sum \kappa_i'}, \quad \kappa_i' := \frac{1}{\sigma_i^2 + \tau^2}
+$$
+
+Calculating the inter-study variance $\tau^2$ not as straightforward. `rma` lets you choose between different estimators, but the default is already fairly unbiased.
+
+The mixed effects model is more flexible than the fixed effect model, but assumes that $y_i$ and $\sigma_i^2$ are independent, which is probably not the case for this kind of analysis.
+As such, no matter which $\tau^2$ estimator is used, there will always be a bias. 
+
+The R code looks very similar to the fixed effect model, with the difference being that we omit the `method` argument. The default already uses a random effects model.
+
+```{r, results='hold'}
+rma.random <- rma(
+  yi = dat$log_or, 
+  vi = dat$var_log_or)
+
+rma.random |> summary()
+rma.random_mean <- rma.random$beta[[1]]
+rma.random_se <- rma.random$se[1]
+```
+\newpage
+
+### Using sample sizes directly
+
+If one has access to the sample size, the model can use the numbers of events and participants directly. In this case, one can do a simple logistic regression.
+The response variable is the number of successes and events, and the explanatory variables are the trial number and whether the treatment was active or not.
+
+```{r, echo=FALSE, results='asis'}
+dat.glm <- tibble(
+  trial_id = rep(dat$trial_id, 2),
+  treatment = rep(c("placebo", "active"), each = nrow(dat)),
+  deaths = c(dat$deaths_placebo, dat$deaths_active),
+  n = c(dat$n_placebo, dat$n_active)
+)
+dat.glm |> 
+  kable(caption = "Data for logistic regression")
+```
+
+
+```{r, results='hold'}
+glm.fixed <- glm(
+  cbind(deaths, n - deaths) ~ trial_id + treatment, 
+  data = dat.glm, 
+  family = binomial)
+
+glm.fixed |> summary()
+
+glm.fixed_placebo <- tidy(glm.fixed) |> 
+  filter(term == "treatmentplacebo")
+glm.fixed_mean <- -glm.fixed_placebo$estimate
+glm.fixed_se <- glm.fixed_placebo$std.error
+```
+\newpage
+Note that the above again assumes that $\mu$ is the same for all studies. We can extend this model to include a random effect for the study:
+
+
+```{r, results='hold'}
+numeric_treatment <-
+  ifelse(dat.glm$treatment == "active", 1, 0)
+
+glm.random <- glmer(
+  cbind(deaths, n - deaths) ~ 
+    trial_id + 
+    treatment + 
+    (-1 + numeric_treatment | as.numeric(trial_id)), 
+  data = dat.glm, 
+  family = binomial,
+  nAGQ = 7)
+glm.random |> summary(correlation=F)
+
+glm.random_placebo <- summary(glm.random)$coefficients["treatmentplacebo",]
+glm.random_mean <- -glm.random_placebo["Estimate"][[1]]
+glm.random_se <- glm.random_placebo["Std. Error"][[1]]
+```
+\newpage
+## Comparison
+
+```{r}
+comparison <- tibble(
+  model = c("RMA Fixed effect", "RMA Random effects", "GLM Fixed effect", "GLM Random effects"),
+  mean = c(rma.fixed_mean, rma.random_mean, glm.fixed_mean, glm.random_mean),
+  se = c(rma.fixed_se, rma.random_se, glm.fixed_se, glm.random_se)
+)
+
+comparison |> kable(caption = "Comparison of the different models")
+comparison |>
+  ggplot(aes(x = model, y = mean, ymin = mean - 1.96 * se, ymax = mean + 1.96 * se)) +
+  geom_pointrange() +
+  geom_hline(yintercept = 0, linetype = "dashed") +
+  scale_x_discrete(limits = c(
+    "RMA Fixed effect", 
+    "RMA Random effects", 
+    "GLM Fixed effect", 
+    "GLM Random effects")) +
+  labs(
+    title = "Comparison of the different methods",
+    x = "Model",
+    y = "Log odds ratio"
+  ) +
+  coord_flip()
+```
