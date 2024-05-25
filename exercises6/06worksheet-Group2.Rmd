@@ -17,3 +17,4 @@ output:
 knitr::opts_chunk$set(echo = TRUE)
 ```
 # Exercise 5
+![Exercise 5.](Ex5.jpeg){width=40% height=60%}
