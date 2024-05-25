@@ -1,0 +1,19 @@
+---
+title: "Worksheet 05 Group 2"
+author:
+- "Andrea Staub"
+- "Emanuel Mauch"
+- "Holly Vuarnoz"
+- "Jan Hohenheim"
+- "Sophie Haldemann"
+output:
+  pdf_document: default
+  html_document:
+    df_print: paged
+---
+
+```{r setup, include=FALSE}
+# Set chunk options here 
+knitr::opts_chunk$set(echo = TRUE)
+```
+# Exercise 5
