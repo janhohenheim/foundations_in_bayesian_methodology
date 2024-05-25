@@ -37,7 +37,7 @@ Source for theory: *Chang BH, Hoaglin DC. Meta-Analysis of Odds Ratios: Current 
 ## Data
 Source: *Pagliaro L, D’Amico G, Sorensen TI, et al. Prevention of first bleeding in cirrhosis. A meta-analysis of randomized trials of nonsurgical treatment*
 
-```{r, echo=FALSE, results='asis'}
+```{r, results='asis'}
 dat.raw <- tibble(
   trial_id = 1:19,
   n_placebo = c(36, 53, 18, 22, 46, 60, 60, 69, 41, 20, 41, 35, 138, 51, 72, 16, 28, 19, 24),
@@ -117,7 +117,7 @@ tabl <- "
 "
 cat(tabl)
 ```
-\newpage
+
 ### Fixed effect
 The measurement $y$ is an estimator of the underlying effect $\mu$ with an error term $\epsilon$. $\mu$ is assumed to be the same for all studies, while $\epsilon$ varies between studies.
 
@@ -193,7 +193,7 @@ rma.random_se <- rma.random$se[1]
 If one has access to the sample size, the model can use the numbers of events and participants directly. In this case, one can do a simple logistic regression.
 The response variable is the number of successes and events, and the explanatory variables are the trial number and whether the treatment was active or not.
 
-```{r, echo=FALSE, results='asis'}
+```{r, results='asis'}
 dat.glm <- tibble(
   trial_id = rep(dat$trial_id, 2),
   treatment = rep(c("placebo", "active"), each = nrow(dat)),

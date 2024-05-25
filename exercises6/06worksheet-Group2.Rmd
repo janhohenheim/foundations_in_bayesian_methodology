@@ -16,5 +16,60 @@ output:
 # Set chunk options here 
 knitr::opts_chunk$set(echo = TRUE)
 ```
-# Exercise 5
+
+```{r, message = F}
+library(tidyverse)
+library(bayesmeta)
+```
+
+## Exercise 3
+
+Data:
+```{r}
+dat <- 
+  tibble(
+    pl_total = c(107,44,51,39,139,20,78,35),
+    pl_case = c(23,12,19,9,39,6,9,10),
+    tr_total = c(208,38,150,45,138,20,201,34),
+    tr_case = c(120,18,107,26,82,16,126,23),
+  ) |>
+  mutate(
+    n_pl_case = pl_total - pl_case,
+    n_tr_case = tr_total - tr_case,
+    labels = c("Adalimumab 1", "Adalimumab 2", "Etanercept 1", "Etanercept 2", "Etanercept 3", "Etanercept 4", "Infliximab 1", "Infliximab 2")
+  ) |>
+  mutate(
+    or = (pl_case / n_pl_case) / (tr_case / n_tr_case),
+  ) |>
+  mutate(
+    log_or = log(or),
+    se_log_or = sqrt(1 / pl_case + 1 / n_pl_case + 1 / tr_case + 1 / n_tr_case),
+  )
+```
+
+Analysis:
+```{r}
+res1 <- bayesmeta(
+  y = dat$log_or,
+  sigma = dat$se_log_or,
+  labels = dat$labels,
+  mu.prior.mean = 0, 
+  mu.prior.sd = 4,
+  tau.prior = \(t) dhalfnormal(t, scale = 0.5),
+  interval.type = "central"
+)
+```
+
+Plots:
+```{r}
+res1 |> summary()
+res1 |> forestplot()
+res1 |> funnel()
+res1 |> traceplot()
+res1 |> weights()
+```
+
+TODO: Report results
+
+## Exercise 5
 ![Exercise 5.](Ex5.jpeg){width=40% height=60%}
