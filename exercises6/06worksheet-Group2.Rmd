@@ -161,103 +161,13 @@ plot(fit.rjags.pl1.coda)
 
 ```
 
+\newpage
+
+Comparison of models
 
 \bigskip
 
-Model in 06worksheet_JAGSextension.r:  
-
-- models the study-specific number of responders as a binomial random variable
-
-- the parameter p of this study-specific binomial is modeled as a logistic regression with mu (overall mean) + treatment effect or 0 if placebo + eta (study-specific random effect)
-
-- eta is drawn from a normal distribution to capture the study-specific variation
-
-- includes posterior predictive checks
-
-- uses uniform priors for mu, beta and tau (variance of error term eta) 
-
-- On a global population level, the response rates for placebo and treatment are the inverse-logit-transformed predicted log-odds from the logistic regression
-
-- For the predictive distribution of the response rate in a new study it adds a normal error term to the population response for the random effect of the studies
-
-
-
-
-\bigskip
-
-Model in worksheet 06 exercise 3:
-
-- takes into account treatment
-- includes a random effect for the studies
-- study-specific effects follow a normal distribution with mean 0 and variance tau^2
-- the prior of the overall effect size mu is a normal with mean 0 and sd 4
-- the prior of the heterogeneity parameter is a halfnormal
-- assumes normality of the log-odds
-- does not include prior predictive checks
-
-
-
-\bigskip
-
-\bigskip
-
-\bigskip
-
-Model in worksheet 05:
-
-```{r}
-pl1_modelString = "
-model {
-for(i in 1:length(y)) {
-  y[i] ~ dnorm(theta[i], prec_s[i]);
-  theta[i] ~ dnorm(mu, prec_tau);
-}
-theta_new ~ dnorm(mu, prec_tau); # predictive distribution for theta
-p_new <- exp(theta_new)/(1+exp(theta_new)); # predictive distribution at the probability scale
-mu ~ dnorm(0.0, 1.0E-4);
-prec_tau ~ dgamma(1.0E-3, 1.0E-3); # just our assumption
-}
-"
-```
-
-- models the study-specific log-odds as a normal random variable and then back-transforms it onto probability scale
-
-- the study-specific mean log-odds is drawn from another normal distribution with mean mu and precision prec_tau
-
-- only considers placebo data
-
-- the predictive distribution of the log-odds for a new study is from the same distribution as the study-specific log-odds, i.e. a normal with mean mu and precision prec_tau, with no error term
-
-- to get the predictive distributino of the response rate of a new study, it's inverse-logit-transformed
-
-- the prior of mu is a normal distribution with fixed mean and precision
-
-- the prior of prec_tau is a gamma distribution with fixed parameters
-
-- the model does not include posterior predictive checks
-
-
-
-
-\bigskip
-
-Main differences:
-
-- 06worksheet_JAGSextension.r includes a covariate for treatment
-- worksheet 5 does not include a covariate for treatment, only models placebo
-- exercise 3 includes treatment data
-
-- They use different priors
-
-- 06worksheet_JAGSextension.r includes posterior predictive checks
-- worksheet 5 and exercise 3 do not include posterior predictive checks
-
-
-\bigskip
-
-Main similarities:
-
-- all models are implemented within a Bayesian framework and incorporate prior distributions
+![](Ex4.jpg)
 
 \newpage
 
