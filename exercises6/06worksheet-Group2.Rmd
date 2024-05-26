@@ -171,7 +171,7 @@ Model in 06worksheet_JAGSextension.r:
 
 - eta is drawn from a normal distribution to capture the study-specific variation
 
-- includes a prediction for posterior predictive checks
+- includes posterior predictive checks
 
 - uses uniform priors for mu, beta and tau (variance of error term eta) 
 
@@ -185,8 +185,14 @@ Model in 06worksheet_JAGSextension.r:
 \bigskip
 
 Model in worksheet 06 exercise 3:
-...
 
+- takes into account treatment
+- includes a random effect for the studies
+- study-specific effects follow a normal distribution with mean 0 and variance tau^2
+- the prior of the overall effect size mu is a normal with mean 0 and sd 4
+- the prior of the heterogeneity parameter is a halfnormal
+- assumes normality of the log-odds
+- does not include prior predictive checks
 
 
 
@@ -235,17 +241,25 @@ prec_tau ~ dgamma(1.0E-3, 1.0E-3); # just our assumption
 \bigskip
 
 Main differences:
+
 - 06worksheet_JAGSextension.r includes a covariate for treatment
 - worksheet 5 does not include a covariate for treatment, only models placebo
+- exercise 3 includes treatment data
 
-- 06worksheet_JAGSextension.R: Includes study-specific random effects
+- 06worksheet_JAGSextension.R and exercise 3 include study-specific random effects
 - Worksheet 05: Does not include random effects for the studies, only models the study-specific log-odds as normally distributed around mu
 
 - They use different priors
 
 - 06worksheet_JAGSextension.r includes posterior predictive checks
-- worksheet 5 does not include posterior predictive checks
+- worksheet 5 and exercise 3 do not include posterior predictive checks
 
+
+\bigskip
+
+Main similarities:
+
+- all models are implemented within a Bayesian framework and incorporate prior distributions
 
 \newpage
 
