@@ -20,6 +20,7 @@ knitr::opts_chunk$set(echo = TRUE)
 ```{r, message = F}
 library(tidyverse)
 library(bayesmeta)
+library(rjags)
 ```
 
 ## Exercise 3
@@ -262,3 +263,101 @@ Main similarities:
 
 ## Exercise 5
 ![Exercise 5.](Ex5.jpeg){width=40% height=60%}
+
+
+## Exercise 6
+
+# a) Numerical approximation
+Numerical maximisation of the log-likelihood corresponding to the Poisson-gamma
+distribution as described by (Held and Sabanés Bové, 2020, p. 210–211 and Fig. 6.13) to
+obtain the marginal maximum likelihood estimator.
+```{r}
+# Data: observed counts of lip cancer cases
+y <- c(11, 5, 15, 9, 6, 9, 2, 3, 26, 39, 20, 31, 9, 16, 6, 16, 19, 17, 15, 11, 19,
+       7, 10, 0, 7, 7, 9, 2, 8, 8, 11, 6, 28, 4, 1, 1, 1, 8, 6, 3, 2, 1, 7, 10, 9, 11, 3,
+       11, 5, 8, 3, 7, 0, 8, 7, 13)
+# Sanity check: number of districts 
+n <- length(y)
+```
+
+The log-likelihood function for the Poisson-Gamma model is given by (from the Book):
+
+\[
+l(\alpha, \beta) = \sum_{i=1}^{n} \left[ \alpha \log(\beta) + \log \left( \frac{\Gamma(\alpha + x_i)}{\Gamma(\alpha)} \right) - (\alpha + x_i) \log(\beta + e_i) \right]
+\]
+
+We want to maximize this log-likelihood function.
+```{r}
+# note that e_i = 1 and xi is our data y 
+# Log-likelihood function
+log.lik <- function(x) {
+  alpha <- x[1]
+  beta <- x[2]
+  log.lik <- sum(alpha * log(beta) + log( (gamma(alpha + y))/(gamma(alpha)) ) -
+              (alpha + y) * log(beta + 1))
+  return(log.lik)
+  }
+
+# Maximize log-likelihood function
+opt <- optim(par=c(0.1, 0.1), fn=log.lik, control = list(fnscale = -1))
+
+# Print the maximum likelihood estimates
+opt$par
+alpha1 <- opt$par[1]
+beta1 <- opt$par[2]
+```
+
+
+# b) Moments matching
+Matching of moments based on the Exercise 5 above, which provides the marginal moment estimator.
+
+![Exercise 6.](exercise6.jpg){width=40% height=60%}
+```{r}
+# Moment-matching function
+moment.matching <- function(mean, var) {
+  alpha <- mean / (var/mean - 1)
+  beta <- 1 / (var/mean - 1)
+  return(params = c(alpha=alpha, beta=beta))
+  }
+
+params <- moment.matching(mean = mean(y), var = var(y))
+alpha2 <- params[1]
+beta2 <- params[2]
+```
+
+Compare means and the lengths of equi-tailed 95%CrI obtained by both approaches. 
+Report your results.
+
+```{r}
+# Function to compute 95% credible intervals
+credible_interval <- function(alpha, beta, y) {
+  lower <- qgamma(0.025, alpha + y, rate = beta + 1)
+  upper <- qgamma(0.975, alpha + y, rate = beta + 1)
+  return(c(lower, upper))
+}
+
+# Compute credible intervals using MLE
+CrI1 <- t(sapply(y, credible_interval, alpha = alpha1, beta = beta1))
+CrI1
+# Compute credible intervals using Method of Moments
+CrI2 <- t(sapply(y, credible_interval, alpha = alpha2, beta = beta2))
+CrI2
+
+# Length of the credible intervals
+lengths_1 <- CrI1[, 2] - CrI1[, 1]
+lengths_2 <- CrI2[, 2] - CrI2[, 1]
+
+# Compute posterior means
+lambda_eb_1 <- (alpha1 + y) / (beta1 + 1)
+lambda_eb_2 <- (alpha2 + y) / (beta2 + 1)
+
+# Compare means and lengths of 95% credible intervals
+mean_comparison <- data.frame(
+  Statistic = c("Posterior Mean (MLE)", "Posterior Mean (MM)", "Length of 95% CrI (MLE)", "Length of 95% CrI (MM)"),
+  Mean = c(mean(lambda_eb_1), mean(lambda_eb_2), mean(lengths_1), mean(lengths_2))
+)
+
+print(mean_comparison)
+```
+
+Practically the same. 
