@@ -246,9 +246,6 @@ Main differences:
 - worksheet 5 does not include a covariate for treatment, only models placebo
 - exercise 3 includes treatment data
 
-- 06worksheet_JAGSextension.R and exercise 3 include study-specific random effects
-- Worksheet 05: Does not include random effects for the studies, only models the study-specific log-odds as normally distributed around mu
-
 - They use different priors
 
 - 06worksheet_JAGSextension.r includes posterior predictive checks
