@@ -19,8 +19,8 @@ knitr::opts_chunk$set(echo = TRUE)
 
 ```{r, message = F}
 library(tidyverse)
-library(bayesmeta)
 library(rjags)
+library(bayesmeta)
 ```
 
 ## Exercise 3
@@ -66,12 +66,11 @@ Plots:
 res1 |> summary()
 res1 |> forestplot()
 res1 |> funnel()
-res1 |> traceplot()
+res1 |> bayesmeta::traceplot()
 res1 |> weights()
 ```
 
-TODO: Report results
-
+The 95% CI for the posterior is [-2.45, -0.76]. This is fairly expected, considering most of the studies report pretty similar findings.
 
 \newpage
 
@@ -167,7 +166,7 @@ Comparison of models
 
 \bigskip
 
-![](Ex4.jpg)
+![Exercise 4.](Ex4.jpg)
 
 \newpage
 
