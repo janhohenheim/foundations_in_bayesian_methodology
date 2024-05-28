@@ -1,0 +1,65 @@
+---
+title: "Final Report"
+author: "Jan Hohenheim"
+output:
+  pdf_document: default
+  html_document:
+    df_print: paged
+---
+
+## Abstract
+
+## Introduction
+
+### Big Problem in Science
+
+### Narrower Problem in Science
+
+### Yet Narrower Paper Gap
+
+### Summary
+
+## Results
+
+### Methods Summary
+
+### Raw Data
+
+### Processed
+
+### Final Statistics
+
+## Discussion
+
+### Results
+
+### Limitations in Filling Gap
+
+### Limits in Generalization
+
+### Contributions Beyond
+
+### Science is Better Now
+
+```{r setup, include=FALSE}
+# Set chunk options here 
+
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r, message = F}
+library(tidyverse)
+library(rjags)
+library(coda)
+library(bayesmeta)
+library(pCalibrate)
+library(ggthemes)
+library(latex2exp)
+library(glue)
+
+theme_set(theme_solarized_2())
+primary_colour <- scale_color_solarized()$palette(1)
+
+# set seed
+set.seed(42)
+```

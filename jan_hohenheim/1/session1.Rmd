@@ -1,0 +1,93 @@
+---
+title: "Personal exercises session 1"
+author: "Jan Hohenheim"
+date: "2024-03-03"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+```{r, message = F}
+library(tidyverse)
+library(rjags)
+library(coda)
+library(bayesmeta)
+library(pCalibrate)
+```
+
+# Exercise 1
+
+## a)
+
+The group investigates the safety and efficacy of Secukinumab for the treatment of ankylosing spondylitis compared to a placebo. 
+Secukinumab is an antibody for IL-17, which is a pro-inflammatory cytokine believed to be involved in the pathogenesis of ankylosing spondylitis.
+
+## b)
+
+```{r}
+dat <- matrix(data = c(14, 9, 1, 5), ncol = 2, byrow = T)
+rownames(dat) <- c("Secukinumab", "Placebo")
+colnames(dat) <- c("Response", "No response")
+message("Data:")
+print(dat)
+
+
+message("Chi-squared test:")
+chisq.test(dat)
+
+message("Fisher's exact test:")
+fisher.test(dat)
+```
+
+The reported p-values don't make me too excited about the results.
+
+## c)
+
+```{r}
+power.prop.test(p1 = 0.6, p2 = 0.25, power = 0.8, sig.level = 0.05)
+```
+
+The reported optimal n = 30.1 matches neatly with the actual n = 30
+
+# Exercise 2
+
+My best guess, without cheating:  
+- Mean: 172 cm  
+- std-dev: 12 cm  
+
+# Exercise 3
+
+Everything works :)
+
+# Exercise 4
+
+## What is your motivation to attend this course?
+
+I want to learn how to actually apply Bayesian methods to real data and how to interpret the results.
+From talking to many people I've been convinced that this kind of statistics is highly relevant
+to everyday life, as the human mind is a) very bad at understanding probabilities without guidance and b)
+working in a Bayesian way by default. I've seen people apply Bayesian statistics as back-of-the-envelope calculations
+for life decisions and I want to be able to do that too.
+
+My MSc. is in neural systems and computation, where I have also encountered Bayesian statistics in the context of
+neuroscience and machine learning. This left me largely scratching my head, as I didn't understand the jargon,
+much less the content of the graphs and the meaning of the numbers involved. I want to change that.
+
+## What would you like to learn in this course and why?
+
+- How to do back-of-the-envelope calculations for life decisions.
+- How to apply a Bayesian framework to biological data.
+
+## Have you already learned or used Bayesian methods?
+
+Only basic stuff, like the concept of a prior and a posterior, and the idea of a likelihood.
+I've worked with Bayes' theorem in the context of probability theory and statistics, but it was not much to write home about.
+
+## If yes, which Bayesian methods and programs are you familiar with?
+N/A
+
+## What is your experience with scientific writing?
+I've written multiple scientific documents and incorporated feedback on all of them, so I think I'm alright.

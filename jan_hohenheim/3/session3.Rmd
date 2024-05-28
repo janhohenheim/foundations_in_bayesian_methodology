@@ -1,0 +1,158 @@
+---
+title: "Worksheet 03"
+author: "Jan Hohenheim"
+date: "2024-04-08"
+output:
+  pdf_document: default
+  html_document:
+    df_print: paged
+---
+
+```{r setup, include=FALSE}
+# Set chunk options here 
+
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r, message=F}
+library(tidyverse)
+library(rjags)
+library(coda)
+library(bayesmeta)
+library(pCalibrate)
+library(ggthemes)
+library(DescTools)
+library(glue)
+
+theme_set(theme_solarized_2())
+```
+
+## Exercise 1
+
+```{r}
+secukinumab.alpha <- 14.5
+secukinumab.beta <- 10
+placebo.alpha <- 12
+placebo.beta <- 37
+```
+
+### a)
+
+```{r, results = "hold"}
+set.seed(42)
+N <- 10000
+secukinumab.post <- rbeta(N, secukinumab.alpha, secukinumab.beta)
+placebo.post <- rbeta(N, placebo.alpha, placebo.beta)
+
+tibble(
+  values = c(secukinumab.post, placebo.post),
+  treatment = rep(c("Secukinumab", "Placebo"), each = N)
+  ) |>
+  ggplot(aes(values, fill = treatment)) +
+  geom_density(alpha = 0.5) +
+  geom_vline(
+    xintercept = c(mean(secukinumab.post), mean(placebo.post)), 
+    linetype = "dashed", 
+    color = "black"
+  ) +
+  theme(legend.position = "top") +
+  labs(
+    title = "Monte Carlo posterior distribution of response rate",
+    x = "Response rate",
+    y = "Density"
+  ) +
+  scale_fill_solarized()
+```
+
+From a first glance, it seems that Secukinumab is more effective than placebo, as their posterior distributions have clearly separated peaks and don't overlap by much.
+
+
+### b)
+
+```{r, results = "hold"}
+# response rate difference (RRD)
+rrd <- secukinumab.post - placebo.post
+rrd.mean <- mean(rrd)
+
+tibble(
+  values = rrd
+  ) |>
+  ggplot(aes(values)) +
+  geom_density(alpha = 0.5) +
+  geom_vline(
+    xintercept = mean(diff), 
+    linetype = "dashed", 
+    color = "black"
+  ) +
+  annotate(
+    "text", 
+    x = rrd.mean + 0.03, 
+    y = 0, 
+    label = round(rrd.mean, 2), 
+    vjust = -1
+  ) +
+  labs(
+    title = "Monte Carlo posterior distribution of response rate difference",
+    x = "Response rate difference",
+    y = "Density"
+  )
+
+glue("Mean: {rrd.mean}")
+```
+
+The RRD is positive, which indicates that Secukinumab seems to be more effective than placebo based on the data.
+A mean value of 0.346 indicates that the response rate is 34.6% higher for Secukinumab than for placebo on average.
+
+### c)
+```{r, results = "hold"}
+rrd.median <- median(rrd)
+rrd.cri <- quantile(rrd, c(0.025, 0.975))
+
+glue("Median: {rrd.median}")
+glue("95% CrI: [{rrd.cri[1]}, {rrd.cri[2]}]")
+```
+
+Our median is very close to the mean, which indicates that the distribution is symmetric. This means that the 95% credible interval is also symmetric around the median, so we don't have to caution ourselves with skewedness when in interpreting it.  
+The CrI itself notably does not contain 0, which indicates that the probability of Secukinumab being superior to placebo is fairly high. Based on the data, we can expect the true improvement of Secukinumab over placebo to be between 11.4% and 56.4%.
+
+### d)
+```{r, results = "hold"}
+# posterior probability of superiority (PPS)
+pps.rrd <- mean(rrd > 0)
+glue("PPS for RRD: {pps.rrd}")
+
+```
+
+The PPS of the RRD is 0.998, which means that in our Monte Carlo simulation, Secukinumab was superior to placebo in 99.8% of the cases. This is a very strong indication that Secukinumab is more effective than placebo, but itself does not provide a measure of how much more effective it is. We just looked at the RRD for that.
+
+### e)
+```{r, results = "hold"}
+# Monte Carlo standard error (MCse) of PPS
+pps.rrd.mcse <- sd(rrd > 0) / sqrt(length(rrd))
+glue("MCse of PPS: {pps.rrd.mcse}")
+```
+
+The Monte Carlo standard error of the PPS is 0.00048. This is a really low value, which indicates that our estimate of the PPS is very precise. This is a good sign that our Monte Carlo simulation is reliable.
+
+## Exercise 2
+
+
+```{r, results = "hold"}
+# response ratio
+rr <- secukinumab.post / placebo.post
+pps.rr <- mean(rr > 1)
+glue("PPS for RR: {pps.rr}")
+
+pps.rr.mcse <- sd(rr > 1) / sqrt(length(rr))
+glue("MCse of PPS for RR: {pps.rr.mcse}")
+
+# odds ratio
+odds <- (secukinumab.post / (1 - secukinumab.post)) / (placebo.post / (1 - placebo.post))
+pps.odds <- mean(odds > 1)
+glue("PPS for OR: {pps.odds}")
+
+pps.odds.mcse <- sd(odds > 1) / sqrt(length(odds))
+glue("MCse of PPS for OR: {pps.odds.mcse}")
+```
+
+Unsurprisingly, the PPS and MCse for the RR and OR are exactly the same as for the RRD. This is because the RR and OR are just different ways of expressing the same information as the RRD. The interpretation of the numbers is the same as before.

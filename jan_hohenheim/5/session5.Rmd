@@ -1,0 +1,332 @@
+---
+title: "Worksheet 05"
+author: "Jan Hohenheim"
+output:
+  pdf_document: default
+  html_document:
+    df_print: paged
+---
+
+```{r setup, include=FALSE}
+# Set chunk options here 
+
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r, message = F}
+library(tidyverse)
+library(rjags)
+library(coda)
+library(bayesmeta)
+library(pCalibrate)
+library(ggthemes)
+library(latex2exp)
+library(glue)
+
+theme_set(theme_solarized_2())
+primary_colour <- scale_color_solarized()$palette(1)
+
+# set seed
+set.seed(42)
+```
+
+## Exercise 1
+
+### a)
+
+```{r}
+pl_total <- c(107,44,51,39,139,20,78,35)
+pl_case <- c(23,12,19,9,39,6,9,10)
+pl_p <- pl_case/pl_total
+pl_logit <- log(pl_case/(pl_total - pl_case))
+pl_se <- sqrt((1/pl_case) + (1/(pl_total - pl_case)))
+
+tibble(p = pl_p) |>
+  ggplot(aes(x = p)) +
+  geom_histogram(bins = 10) +
+  labs(title = "Histogram of P[Responder|Placebo]", x = "P[Responder|Placebo]", y = "Frequency") +
+  scale_color_solarized()
+
+
+tibble(logit = pl_logit) |>
+  ggplot(aes(x = logit)) +
+  geom_histogram(bins = 10) +
+  labs(title = "Histogram of logit(P[Responder|Placebo])", x = "logit(P[Responder|Placebo])", y = "Frequency")
+
+```
+
+### b)
+```{r}
+pl1_modelString <- "
+model {
+  for(i in 1:length(y)){
+    y[i] ~ dnorm(theta[i], prec_s[i]);
+    theta[i] ~ dnorm(mu, prec_tau);
+  }
+  theta_new ~ dnorm(mu, prec_tau); # predictive distribution for theta
+  p_new <- exp(theta_new)/(1+exp(theta_new)); # predictive distribution at the probability scale
+  mu ~ dnorm(0, 1.0E-4); # just our assumption
+  prec_tau ~ dgamma(1.0E-3, 1.0E-3); # just our assumption
+}
+"
+
+# Random effects meta-analysis in JAGS
+pl_prec <- 1/(pl_se^2)
+model <- jags.model(
+  textConnection(pl1_modelString), 
+  data = list(
+    y = pl_logit,
+    prec_s = pl_prec), 
+  n.chains = 4, # rule of thumb
+)
+
+update(model, 5000)
+model_samples <- coda.samples(model, c("theta_new", "p_new"), 40000)
+
+model_samples |> summary()
+```
+
+### c)
+Let's go through the code in chunks.
+
+```r
+pl1_modelString <- "
+model {
+```
+
+This is a setup for jags, which requires its own syntax and thus needs to be specified in a string.
+Let's take a look at the model specification.
+
+```r
+  for(i in 1:length(y)){
+    y[i] ~ dnorm(theta[i], prec_s[i]);
+    theta[i] ~ dnorm(mu, prec_tau);
+  }
+```
+
+This is the likelihood and prior specification. We assume that the data is normally distributed around the theta values, which are in turn normally distributed around mu. 
+The `prec_s` and `prec_tau` are the precisions of the normal distributions.
+`y` and `prec_s` will be passed as data to the model later.
+
+```r
+  theta_new ~ dnorm(mu, prec_tau); # predictive distribution for theta
+```
+
+`theta_new` is the new theta value we want to predict, i.e. our output. We assume that it is normally distributed around `mu` with precision `prec_tau`.
+
+```r
+  p_new <- exp(theta_new)/(1+exp(theta_new)); # predictive distribution at the probability scale
+```
+
+We then transform `theta_new` to the probability scale. The transformation is the inverse logit function, i.e. the sigmoid function. 
+We have to do this because we model the logit of the probability
+for better normality.
+
+```r
+  mu ~ dnorm(0, 1.0E-4); # just our assumption
+  prec_tau ~ dgamma(1.0E-3, 1.0E-3); # just our assumption
+```
+These are the priors for `mu` and `prec_tau`. We assume that `mu` is normally distributed around 0 with a very small precision and that `prec_tau` is gamma distributed with shape and rate parameters of 1e-3.
+These values will be updated during the MCMC sampling.
+
+```r
+}
+"
+```
+This is the end of the model specification.
+
+```r
+pl_prec <- 1/(pl_se^2)
+```
+Since we model the data through the logit transformation, we need to calculate the precision of the ensuing normal distribution from the standard error. This is how this is done.
+
+```r
+model <- jags.model(
+  textConnection(pl1_modelString), 
+  data = list(
+    y = pl_logit,
+    prec_s = pl_prec), 
+  n.chains = 4, # rule of thumb
+)
+```
+
+Here we just plug in the model string and the data described before into the jags model function. We also specify the number of chains to run, which is 4 by convention.
+
+```r
+update(model, 5000)
+```
+
+We update the model in a burn-in phase. This is done by running the model for 5000 iterations.
+
+```r
+model_samples <- coda.samples(model, c("theta_new", "p_new"), 40000)
+```
+
+Finally, we sample from the model to get the posterior samples of `theta_new` and `p_new` after we run the model for 40000 iterations.
+
+
+### d)
+```{r}
+model_samples.df <- do.call(rbind.data.frame, model_samples)
+p_new <- model_samples.df$p_new
+```
+
+```{r}
+
+tibble(p = model_samples.df$theta_new) |>
+  ggplot(aes(x = p)) +
+  geom_density(fill = primary_colour, alpha = 0.5) +
+  labs(title = "Density of Logit(P[Responder|Placebo])", x = "P[Responder|Placebo]", y = "Density") +
+  scale_color_solarized()
+
+tibble(p = p_new) |>
+  ggplot(aes(x = p)) +
+  geom_density(fill = primary_colour, alpha = 0.5) +
+  labs(title = "Density of P[Responder|Placebo]", x = "P[Responder|Placebo]", y = "Density") +
+  scale_color_solarized()
+```
+
+The posterior looks fairly narrow around 25%
+
+### e)
+```{r}
+quantile(p_new, probs = c(0.025, 0.5, 0.975))
+```
+
+It looks about right. My 95% credible interval is [14%, 41%] and the median is 25%,
+compared to the result of Baeten et al. of 25% and [13%, 40%].
+
+### f)
+
+```{r}
+get_beta_params <- function(mu, sd) {
+  alpha <- mu^2 * ((1 - mu) / sd^2 - 1 / mu)
+  beta <- alpha * (1 - mu) / mu
+  return(list(alpha = alpha, beta = beta))
+}
+
+mu <- p_new |> mean()
+sd <- p_new |> sd()
+
+beta_params <- get_beta_params(mu, sd)
+alpha <- beta_params$alpha
+beta <- beta_params$beta
+```
+
+### g)
+
+```{r, results = "hold"}
+"Alpha: {alpha |> round(2)}" |> glue()
+"Beta: {beta |> round(2)}" |> glue()
+```
+
+The alpha and beta parameters reported by Baeten et al. were 11 and 32, which is fairly close to our 
+result of 12 and 34.
+
+### h)
+
+Our goal is to find out how likely a patient will respond to the placebo treatment. We've got historical data on previous placebo trials and will use these to estimate the underlying probability.
+First, we need to assume a distribution. Here, we use a normal distribution. The data is not normally
+distributed as-is, but can be transformed to a normal distribution by taking the logit. This is defined by the following equation:
+$$
+\text{logit}(p) = \log\left(\frac{p}{1-p}\right)
+$$
+After applying this transformation, we can model the data as normally distributed around the mean $\theta$ with the precision taken from the data's standard error, also transformed by the logit.
+$\theta$ itself is also assumed to be normally distributed around $\mu$ with precision $\tau$, which are unknown parameters. We (semi-arbitrarily) assume that $\mu$ is normally distributed around 0 with a very small precision and that $\tau$ is gamma distributed with shape and rate parameters of 0.001. These are our priors. JAGS can be used to update these priors with the given data. The resulting posterior distribution of $\theta$ can then be transformed back to the probability scale using the inverse logit function. This will give us an estimate of the probability of a patient responding to the placebo treatment based on our data.
+
+## Exercise 2
+
+### a)
+
+```{r}
+active_beta <- 1
+placebo_alpha <- 11
+placebo_beta <- 32
+
+active_alphas <- seq(0, 10, by = 0.01)
+n <- 5000
+
+ps <- tibble(
+  alpha = active_alphas,
+  p = NA
+)
+
+for (active_alpha in active_alphas) {
+  active_p <- rbeta(n, active_alpha, active_beta)
+  placebo_p <- rbeta(n, placebo_alpha, placebo_beta)
+  p <- mean(active_p > placebo_p)
+  ps[ps$alpha == active_alpha, "p"] <- p
+}
+
+ps |>
+  mutate(diff = abs(p - 0.5)) |>
+  arrange(diff) |>
+  head(10)
+```
+We can see that the alpha that results in the closest P[Active > Placebo] to 50% is indeed 0.5.
+
+### b)
+
+The high-level idea is to simulate outcomes from the beta distributions of the active and placebo groups and then calculate the proportion of times the active group has a higher response rate than the placebo group. We then repeat this process for different values of alpha and find the one that results in a P[Active > Placebo] closest to 50%. The reason we care about this outcome in particular is that it is the most conservative estimate of the treatment effect, i.e. treatment and placebo are equally likely to be better. As we have already fixed the $\beta$ parameter for the active group to 1, we can only vary the $\alpha$ parameter to achieve this.
+
+Let's go through it bit by bit.
+```r
+active_beta <- 1
+placebo_alpha <- 11
+placebo_beta <- 32
+```
+These are the given parameters for the beta distributions of the active and placebo groups. Active is ~ Beta($\alpha$, 1) and placebo is ~ Beta(11, 32).
+
+```r
+active_alphas <- seq(0, 10, by = 0.01)
+```
+We want to vary the alpha parameter of the active group from 0 to 10 in steps of 0.01.
+
+```r
+n <- 5000
+```
+
+We will simulate 5000 outcomes for each alpha value.
+
+```r
+ps <- tibble(
+  alpha = active_alphas,
+  p = NA
+)
+```
+
+Here we set up a data frame to store the results.
+
+```r
+for (active_alpha in active_alphas) {
+```
+We loop through the alpha values.
+
+```r
+  active_p <- rbeta(n, active_alpha, active_beta)
+  placebo_p <- rbeta(n, placebo_alpha, placebo_beta)
+```
+
+We simulate the outcomes for the active and placebo groups. The placebo group uses the fixed alpha and beta parameters discussed before, while the active group uses the current alpha value and a fixed beta value of 1.
+
+```r
+  p <- mean(active_p > placebo_p)
+  ps[ps$alpha == active_alpha, "p"] <- p
+}
+```
+
+We calculate the proportion of times the active group has a higher response rate than the placebo group and store it in the data frame.
+
+```r
+ps |>
+  mutate(diff = abs(p - 0.5)) |>
+  arrange(diff) |>
+  head(10)
+```
+
+Finally, we calculate the difference between the proportion and 0.5, sort the data frame by this difference and show the 10 alpha values that result in the smallest difference.
+
+
+
+
+
