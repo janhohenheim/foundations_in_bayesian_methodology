@@ -1,0 +1,30 @@
+> 1. What have you learnt in this course? For example, review your answers in the survey you completed at the beginning of the course. What has changed?
+
+The fundamental difference is that I now know how to actually apply Bayesian methods.
+I knew before how Bayesian thinking worked in theory, but would not have been able
+to use it for any real-world analysis.
+
+> 2. Which tools for organizing group collaboration can you recommend to future students?
+
+A public repository on GitHub worked really well.
+We all added our code to a shared file per exercise sheet.
+
+> 3. How much time did it take you to complete all the tasks?
+
+Probably around 4-6 hours per exercise sheet (including group tasks).
+This means I took 5 * 6 = 30 hours.
+
+> 4. What should be improved in this course and how?
+
+I was not anticipating that the group tasks would have very different time commitments.
+A little asterisk next to the task indicating its time estimate would have been helpful.
+Something like: Task 1: Do XYZ *, Task 2: Do ABC ***, Task 3: Do DEF **.
+For my own note-taking, it would have been helpful to have access to the whole script from the beginning.
+
+> 5. What are the positive sides of this course? What did you like most?
+
+I loved the practical aspect of the course. I especially liked how we were guided by
+a real paper all throughout. This made the course feel very real and relevant.
+I also appreciate how the exercises are setup such that we have the possibility
+to hand in perfect solutions. This makes it feel like the goal was not to "weed out"
+bad students, but to help us really learn and understand the material.

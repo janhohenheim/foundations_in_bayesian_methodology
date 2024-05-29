@@ -2,7 +2,9 @@
 title: "Final Report"
 author: "Jan Hohenheim"
 output:
-  pdf_document: default
+  pdf_document:
+    includes: 
+        in_header: header.tex
   html_document:
     df_glue: paged
 ---
@@ -20,22 +22,12 @@ For the data and results, I used relevant code right in the text to make it easi
 
 Gramatically, I used "we" to refer to myself and the original authors of Baeten et al. Thus, the paper is written as if I were part of the original study. 
 
-The exercise sheets were not adapted chronologically, but rather by the order I expect their content to come up in practice.
+The exercise sheets were not adapted chronologically, but rather by the order I expect their content to come up in practice. All feedback I initially received in the exercises was incorporated.
 
-
-## Abstract
 
 ## Introduction
 
-### Big Problem in Science
-
-### Narrower Problem in Science
-
-### Yet Narrower Paper Gap
-
 We investigate the safety and efficacy of Secukinumab for the treatment of ankylosing spondylitis compared to a placebo. Secukinumab is an antibody for IL-17, which is a pro-inflammatory cytokine believed to be involved in the pathogenesis of ankylosing spondylitis.
-
-### Summary
 
 ## Code Setup
 
@@ -49,11 +41,11 @@ library(ggthemes)
 library(DescTools)
 library(latex2exp)
 library(glue)
+library(knitr)
 
 theme_set(theme_solarized_2())
 primary_colour <- scale_color_solarized()$palette(1)
 
-# set seed
 set.seed(42)
 ```
 
@@ -61,7 +53,7 @@ set.seed(42)
 
 ### Methods Summary
 
-TODO
+Data was collected from 30 patients with ankylosing spondylitis. They were randomized to receive either Secukinumab (n = 24) or a placebo (n = 6). The response rate was measured in both groups. We then analyzed the data using a Bayesian approach. Our prior for the placebo group was derived from a random effects meta-analysis of 8 historical trials. Our prior for the treatment group was chosen such that its chance of being better than the placebo group is as close to 50% as possible. We then updated our priors based on the data collected and calculated the resulting posterior response rates for both groups.
 
 ### Study Design and Sample Size Computation
 
@@ -147,22 +139,20 @@ This means that we will look at the POC for 1 placebo : 4 secukinumab patients, 
 
 #### In-Depth Explanation
 
-TODO: new code
-
 For a more in-depth explanation, we can look at the code used.
 
 
 First, let's go over how the POC is calculated:
 
 ```r
-poc <- function(n_secukinumab, n_placebo, p_secukinumab, p_placebo, n_sim){
+poc_ratio <- function(n_secukinumab, n_placebo, p_secukinumab, p_placebo, n_sim){
   x_secukinumab <- rbinom(n_sim, n_secukinumab, p_secukinumab)
   x_placebo <- rbinom(n_sim, n_placebo, p_placebo)
   
   p_hat_secukinumab <- x_secukinumab / n_secukinumab
   p_hat_placebo <- x_placebo / n_placebo
   
-  mean(p_hat_secukinumab > p_hat_placebo)
+  p_hat_secukinumab > p_hat_placebo
 }
 ```
 
@@ -170,6 +160,8 @@ The algorithm can be put into three steps:
 1. Simulate trial data for the secukinumab and placebo groups 1'000'000 times.
 2. Calculate the response rates for both groups.
 3. Calculate how often on average the response rate in the secukinumab group is higher than in the placebo group.
+
+The POC is thus the mean of the data returned by this function. 
 
 
 Now we prepare the simulated patient numbers:
@@ -205,10 +197,15 @@ For the actual simulation, we have the following code:
 ```r
 simulations <- simulations |>
   mutate(
-    poc = map2_dbl(
+    poc_ratio = map2(
       n_secukinumab, 
       n_placebo, 
-      \(n_secukinumab, n_placebo ) poc(n_secukinumab, n_placebo, p_secukinumab, p_placebo, n_sim)))
+      \(n_s, n_p) poc_ratio(n_s, n_p, p_secukinumab, p_placebo, n_sim))
+  ) |>
+  mutate(
+    poc = map_dbl(poc_ratio, mean),
+    mcse = map_dbl(poc_ratio, \(x) sd(x) / sqrt(n_sim))
+  )
 ```
 
 For each of our simulated patient numbers, we will calculate the POC as described earlier based on 1'000'000 trials per simulation.
@@ -222,7 +219,6 @@ simulations |>
   filter(poc > 0.9) |>
   mutate(
     n_total = n_secukinumab + n_placebo,
-    se = sqrt(poc * (1 - poc) / n_sim)
   ) |>
   arrange(n_total)
 ```
@@ -234,9 +230,9 @@ Increasing the number of participants would further improve the POC.
 
 The prior distribution of the placebo response rate was reached by performing a random effects meta-analysis on 8 historical trials. This was done on the logit scale to approximate a normal distribution. A resulting Beta distribution was then calculated by converting the mean and variance of the normal distribution to the parameters of the Beta distribution. 
 
-#### Historical Data
+#### Historical Data  
 
-```{r, results='hold'}
+```{r}
 pl_total <- c(107,44,51,39,139,20,78,35)
 pl_case <- c(23,12,19,9,39,6,9,10)
 pl_p <- pl_case/pl_total
@@ -294,6 +290,40 @@ update(model, 5000)
 model_samples <- coda.samples(model, c("theta_new", "p_new"), 40000)
 
 model_samples |> summary()
+```
+
+For my own sake, I want to also include the code for how this can be achieved using bayesmeta:
+
+```{r}
+dat_bayesmeta <- 
+  tibble(
+    pl_total = c(107,44,51,39,139,20,78,35),
+    pl_case = c(23,12,19,9,39,6,9,10),
+    tr_total = c(208,38,150,45,138,20,201,34),
+    tr_case = c(120,18,107,26,82,16,126,23),
+  ) |>
+  mutate(
+    n_pl_case = pl_total - pl_case,
+    n_tr_case = tr_total - tr_case,
+    labels = c("Adalimumab 1", "Adalimumab 2", "Etanercept 1", "Etanercept 2", "Etanercept 3", "Etanercept 4", "Infliximab 1", "Infliximab 2")
+  ) |>
+  mutate(
+    or = (pl_case / n_pl_case) / (tr_case / n_tr_case),
+  ) |>
+  mutate(
+    log_or = log(or),
+    se_log_or = sqrt(1 / pl_case + 1 / n_pl_case + 1 / tr_case + 1 / n_tr_case),
+  )
+res1 <- bayesmeta(
+  y = dat_bayesmeta$log_or,
+  sigma = dat_bayesmeta$se_log_or,
+  labels = dat_bayesmeta$labels,
+  mu.prior.mean = 0, 
+  mu.prior.sd = 4,
+  tau.prior = \(t) dhalfnormal(t, scale = 0.5),
+  interval.type = "central"
+)
+res1 |> forestplot()
 ```
 
 #### Explanation
@@ -410,8 +440,8 @@ The 95% credible interval for the logit of the response rate is [14%, 41%] and t
 
 The function to convert a mean and a standard deviation to alpha and beta parameters was derived by moments matching:
 
-![Exercise 2 part 1](figures/session2-ex2-1.png){width=60% height=60%}
-![Exercise 2 part 2](figures/session2-ex2-2.png){width=60% height=60%}
+![Exercise 2 part 1](figures/session2-ex2-1.png){width=50% height=60%}
+![Exercise 2 part 2](figures/session2-ex2-2.png){width=50% height=60%}
 
 In our case, the resulting parameters are as follows:
 
@@ -619,7 +649,7 @@ The prior for placebo is much stronger and its confidence interval is much narro
 
 A total of 30 participants were recruited for the study, 24 of which were assigned to the treatment group and 6 to the placebo group. This number comes from the minimum sample size of 25 calculated earlier, with an additional 5 to account for potential dropouts. This analysis includes data from all participants.
 
-TODO what is response.
+A response is defined as a 20% response according to the Assessment of Spondylo Arthritis international Society criteria for improvement (ASAS20) at week 6.
 
 #### Raw Data
 
@@ -690,7 +720,7 @@ glue("Median: {secukinumab_median_post}")
 glue("95% CrI: {secukinumab_ci_post[1]} - {secukinumab_ci_post[2]}")
 ```
 
-The posterior is much stronger than the prior and the credible interval is much narrower ($\alpha + \beta = 14.5 + 10 = 24.5$). Given our new data, the true probability of a patient responding to Secukinumab is probably around 0.59 and between 0.40 and 0.77.
+The posterior is much stronger than the prior and the credible interval is much narrower ($\alpha + \beta = 14.5 + 10 = 24.5$). Given our new data, the true probability of a patient responding to Secukinumab is probably around 0.59 and between 0.40 and 0.77 given our data and prior.
 
 #### Posterior for Placebo
 
@@ -727,7 +757,7 @@ glue("Median: {placebo_median_post}")
 glue("95% CrI: {placebo_ci_post[1]} - {placebo_ci_post[2]}")
 ```
 
-Our prior was already fairy strong and the new data is in line with it. Thus, our posterior is not much different from our prior. The true probability of a patient responding to placebo is probably around 0.24 and between 0.14 and 0.37.
+Our prior was already fairy strong and the new data is in line with it. Thus, our posterior is not much different from our prior. The true probability of a patient responding to placebo is probably around 0.24 and between 0.14 and 0.37 given our data and prior.
 
 
 #### Plots for Both Posteriors
@@ -764,7 +794,7 @@ From a first glance, it seems that Secukinumab is more effective than placebo, a
 ```{r, results = "hold"}
 # response rate difference (RRD)
 rrd <- secukinumab_post - placebo_post
-rrd.mean <- mean(rrd)
+rrd_mean <- mean(rrd)
 
 tibble(
   values = rrd
@@ -778,9 +808,9 @@ tibble(
   ) +
   annotate(
     "text", 
-    x = rrd.mean + 0.03, 
+    x = rrd_mean + 0.03, 
     y = 0, 
-    label = round(rrd.mean, 2), 
+    label = round(rrd_mean, 2), 
     vjust = -1
   ) +
   labs(
@@ -789,18 +819,18 @@ tibble(
     y = "Density"
   )
 
-glue("Mean: {rrd.mean}")
+glue("Mean: {rrd_mean}")
 ```
 
 The RRD is positive, which indicates that Secukinumab seems to be more effective than placebo based on the data.
 A mean value of 0.346 indicates that the response rate is 34.6% higher for Secukinumab than for placebo on average.
 
 ```{r, results = "hold"}
-rrd.median <- median(rrd)
-rrd.cri <- quantile(rrd, c(0.025, 0.975))
+rrd_median <- median(rrd)
+rrd_cri <- quantile(rrd, c(0.025, 0.975))
 
-glue("Median: {rrd.median}")
-glue("95% CrI: [{rrd.cri[1]}, {rrd.cri[2]}]")
+glue("Median: {rrd_median}")
+glue("95% CrI: [{rrd_cri[1]}, {rrd_cri[2]}]")
 ```
 
 Our median is very close to the mean, which indicates that the distribution is symmetric. This means that the 95% credible interval is also symmetric around the median, so we don't have to caution ourselves with skewedness when in interpreting it.  
@@ -809,8 +839,8 @@ The CrI itself notably does not contain 0, which indicates that the probability 
 #### Posterior Probability of Superiority (PPS) of RRD
 ```{r, results = "hold"}
 # posterior probability of superiority (PPS)
-pps.rrd <- mean(rrd > 0)
-glue("PPS for RRD: {pps.rrd}")
+pps_rrd <- mean(rrd > 0)
+glue("PPS for RRD: {pps_rrd}")
 
 ```
 
@@ -818,8 +848,8 @@ The PPS of the RRD is 0.998, which means that in our Monte Carlo simulation, Sec
 
 ```{r, results = "hold"}
 # Monte Carlo standard error (MCse) of PPS
-pps.rrd.mcse <- sd(rrd > 0) / sqrt(length(rrd))
-glue("MCse of PPS: {pps.rrd.mcse}")
+pps_rrd_mcse <- sd(rrd > 0) / sqrt(length(rrd))
+glue("MCse of PPS: {pps_rrd_mcse}")
 ```
 
 The Monte Carlo standard error of the PPS is 0.00048. This is a really low value, which indicates that our estimate of the PPS is very precise. This is a good sign that our Monte Carlo simulation is reliable.
@@ -829,38 +859,57 @@ The Monte Carlo standard error of the PPS is 0.00048. This is a really low value
 ```{r, results = "hold"}
 # response ratio
 rr <- secukinumab_post / placebo_post
-pps.rr <- mean(rr > 1)
-glue("PPS for RR: {pps.rr}")
-
-pps.rr.mcse <- sd(rr > 1) / sqrt(length(rr))
-glue("MCse of PPS for RR: {pps.rr.mcse}")
+glue("RR: {mean(rr)}")
+rr_cri <- quantile(rr, c(0.025, 0.975))
+glue("95% CrI for RR: [{rr_cri[1]}, {rr_cri[2]}]")
+pps_rr <- mean(rr > 1)
+glue("PPS for RR: {pps_rr}")
+pps_rr_mcse <- sd(rr > 1) / sqrt(length(rr))
+glue("MCse of PPS for RR: {pps_rr_mcse}")
 
 # odds ratio
 odds <- (secukinumab_post / (1 - secukinumab_post)) / (placebo_post / (1 - placebo_post))
-pps.odds <- mean(odds > 1)
-glue("PPS for OR: {pps.odds}")
-
-pps.odds.mcse <- sd(odds > 1) / sqrt(length(odds))
-glue("MCse of PPS for OR: {pps.odds.mcse}")
+glue("OR: {mean(odds)}")
+odds_cri <- quantile(odds, c(0.025, 0.975))
+glue("95% CrI for OR: [{odds_cri[1]}, {odds_cri[2]}]")
+pps_odds <- mean(odds > 1)
+glue("PPS for OR: {pps_odds}")
+pps_odds_mcse <- sd(odds > 1) / sqrt(length(odds))
+glue("MCse of PPS for OR: {pps_odds_mcse}")
 ```
-
-TODO: Add CIs
 
 Unsurprisingly, the PPS and MCse for the RR and OR are exactly the same as for the RRD. This is because the RR and OR are just different ways of expressing the same information as the RRD. The interpretation of the numbers is the same as before.
 
 ### Final Statistics
 
-TODO: Add table
+```{r, results='asis'}
+tibble(
+  group = c("Secukinumab", "Placebo"),
+  n = dat_raw |> rowSums(),
+  responders = dat_raw[,1],
+  responders_percent = round(responders / n * 100, 1),
+  posterior_response_rate_percent = 
+    round(c(secukinumab_mean_post, placebo_mean_post) * 100, 1),
+) |>
+  kable(caption = "Final Results")
+```
+
+```{r, results='hold'}
+"Response Rate Difference (RRD): {round(rrd_mean * 100, 1)}%" |> glue()
+"95% CrI: [{round(rrd_cri[1] * 100, 1)}%, {round(rrd_cri[2] * 100, 1)}%]" |> glue()
+"Posterior Probability of Superiority (PPS) of RRD: {round(pps_rrd * 100, 1)}%" |> glue()
+"MCse of PPS of RRD: {round(pps_rrd_mcse * 100, 3)}%" |> glue()
+```
 
 ## Discussion
 
-### Results
+### Conclusion
 
-### Limitations in Filling Gap
+The results show that Secukinumab is likely more effective than placebo. We deduce the probability of response to be 59.2% for secukinumab compared to 24.3% for placebo. This makes the response rate difference 34.6% in favor of secukinumab. The 95% credible interval for the response rate difference is [12.3%, 56%], meaning the true difference probably lies within this range. In total, we are 99.8% certain that secukinumab is more effective than placebo (=PPS). The Monte Carlo standard error of the PPS is 0.048%, which indicates that our estimate of the PPS is very precise.
 
-### Limits in Generalization
+### Limitations
 
-### Contributions Beyond
+This study does not assess long-term safety of secukinumab, which is an important aspect of any treatment. It also does not factor-in secondary responses beyond the ASAS20 due to the limited placebo size.
 
-### Science is Better Now
+We recommend further studies with more participants and longer follow-up periods to assess the long-term safety and efficacy of secukinumab.
 

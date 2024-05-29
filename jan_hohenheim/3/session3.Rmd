@@ -113,7 +113,7 @@ glue("95% CrI: [{rrd.cri[1]}, {rrd.cri[2]}]")
 ```
 
 Our median is very close to the mean, which indicates that the distribution is symmetric. This means that the 95% credible interval is also symmetric around the median, so we don't have to caution ourselves with skewedness when in interpreting it.  
-The CrI itself notably does not contain 0, which indicates that the probability of Secukinumab being superior to placebo is fairly high. Based on the data, we can expect the true improvement of Secukinumab over placebo to be between 11.4% and 56.4%.
+The CrI itself notably does not contain 0, which indicates that the probability of Secukinumab being superior to placebo is fairly high. Based on the data, we can expect the true improvement of Secukinumab over placebo to be between 11.4% and 56.2%.
 
 ### d)
 ```{r, results = "hold"}
